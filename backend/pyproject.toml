@@ -1,0 +1,9 @@
+[project]
+name = "orderbridge"
+version = "0.1.0"
+description = "OneStop → GrainMarket order automation"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

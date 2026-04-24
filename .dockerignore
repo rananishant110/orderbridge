@@ -1,0 +1,33 @@
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+backend/.venv/
+
+# Runtime data — mounted as a volume at runtime, don't bake it in
+storage/mappings.db
+storage/mappings.db-journal
+storage/mappings.db-wal
+storage/mappings.db-shm
+storage/runs/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Repo meta / docs
+.git/
+.gitignore
+.claude/
+*.md
+PRD.md
+PLAN.md
+README.md
+
+# Raw sample workbooks at the repo root — not needed at runtime
+/*.xlsx
+
+# Node artefacts (if any get introduced)
+node_modules/

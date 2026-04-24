@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Runtime data
+storage/mappings.db
+storage/mappings.db-journal
+storage/mappings.db-wal
+storage/mappings.db-shm
+storage/runs/
+storage/templates/
+
+# OS
+.DS_Store
+
+# Claude Code session state
+.claude/
+
+# Raw sample workbooks at repo root (not needed in Git)
+*.xlsx

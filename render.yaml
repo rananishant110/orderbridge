@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: orderbridge
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    # Render $7/mo Starter plan — enough for a single-tenant internal tool.
+    # Change to "standard" ($25/mo) if you need more RAM for large catalogs.
+    plan: starter
+    healthCheckPath: /api/catalogs/status
+
+    disk:
+      name: orderbridge-storage
+      mountPath: /app/storage
+      sizeGB: 1
+
+    envVars:
+      - key: OB_STORAGE_DIR
+        value: /app/storage
