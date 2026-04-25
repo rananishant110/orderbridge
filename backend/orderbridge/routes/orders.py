@@ -6,10 +6,11 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from .. import config, db
+from ..auth import verify_session
 from ..schemas import (
     ApplyRequest,
     ApplyResponse,
@@ -22,10 +23,6 @@ from ..services.excel_writer import OrderWrite, write_quantities
 from ..services.matching import GmIndex, match_all
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
-
-# Single-tenant internal tool — no auth. Every action is attributed to this
-# constant so the DB columns remain populated.
-LOCAL_USER = "local"
 
 
 # In-memory staging for runs between upload and apply. A restart loses them,
@@ -49,8 +46,8 @@ def _load_learned() -> dict[str, tuple[int | None, str | None]]:
 
 
 @router.post("/upload", response_model=OrderUploadResponse)
-async def upload(file: UploadFile = File(...)):
-    _user = LOCAL_USER
+async def upload(file: UploadFile = File(...), user: str = Depends(verify_session)):
+    _user = user
     run_id = uuid.uuid4().hex[:12]
     tmp_path = config.RUNS_DIR / f"{run_id}__{file.filename}"
     tmp_path.parent.mkdir(parents=True, exist_ok=True)
@@ -99,8 +96,8 @@ async def upload(file: UploadFile = File(...)):
 
 
 @router.post("/apply", response_model=ApplyResponse)
-def apply(req: ApplyRequest):
-    _user = LOCAL_USER
+def apply(req: ApplyRequest, user: str = Depends(verify_session)):
+    _user = user
     stage = _RUN_STAGING.get(req.run_id)
     if stage is None:
         raise HTTPException(404, "Unknown run_id — upload again")
@@ -211,7 +208,7 @@ def apply(req: ApplyRequest):
 
 
 @router.get("/download/{filename}")
-def download(filename: str):
+def download(filename: str, user: str = Depends(verify_session)):
     # Prevent path traversal: filename must be a bare name, not a path.
     if "/" in filename or "\\" in filename or ".." in filename:
         raise HTTPException(400, "invalid filename")
@@ -226,7 +223,7 @@ def download(filename: str):
 
 
 @router.get("/history")
-def history(limit: int = 25):
+def history(limit: int = 25, user: str = Depends(verify_session)):
     with db.session() as conn:
         rows = conn.execute(
             """SELECT uploaded_at, uploaded_by, filename,

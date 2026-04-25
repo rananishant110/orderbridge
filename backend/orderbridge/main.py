@@ -1,16 +1,25 @@
 """FastAPI entry point.
 
 One app:
-  - /api/*   JSON endpoints (Basic-authed)
-  - /        static frontend
+  - /api/login    POST  — sets session cookie (public)
+  - /api/logout   POST  — clears session cookie (public)
+  - /api/*        JSON endpoints (session-authed)
+  - /             static frontend
 """
 from __future__ import annotations
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from . import config, db
+from .auth import clear_session, create_session
 from .routes import catalogs, orders
+
+
+class _LoginRequest(BaseModel):
+    username: str
+    password: str
 
 
 def create_app() -> FastAPI:
@@ -18,6 +27,21 @@ def create_app() -> FastAPI:
     db.init_schema()
 
     app = FastAPI(title="OrderBridge", version="0.1.0")
+
+    @app.post("/api/login", tags=["auth"])
+    def login(body: _LoginRequest, response: Response):
+        if not create_session(body.username, body.password, response):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Bad credentials",
+            )
+        return {"ok": True}
+
+    @app.post("/api/logout", tags=["auth"])
+    def logout(response: Response):
+        clear_session(response)
+        return {"ok": True}
+
     app.include_router(orders.router)
     app.include_router(catalogs.router)
 

@@ -4,20 +4,19 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import datetime
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from .. import config, db
+from ..auth import verify_session
 from ..schemas import CatalogDiff, SearchResult
 from ..services.excel_reader import read_gm_catalog, read_onestop
 from ..services.matching import GmIndex
 
 router = APIRouter(prefix="/api/catalogs", tags=["catalogs"])
 
-LOCAL_USER = "local"
-
 
 @router.post("/refresh", response_model=CatalogDiff)
-async def refresh(onestop: UploadFile = File(...), gm: UploadFile = File(...)):
+async def refresh(onestop: UploadFile = File(...), gm: UploadFile = File(...), user: str = Depends(verify_session)):
     config.ensure_dirs()
 
     os_path = config.ONESTOP_TEMPLATE_PATH
@@ -74,7 +73,7 @@ async def refresh(onestop: UploadFile = File(...), gm: UploadFile = File(...)):
 
 
 @router.get("/search", response_model=list[SearchResult])
-def search(q: str, limit: int = 10):
+def search(q: str, limit: int = 10, user: str = Depends(verify_session)):
     if not config.GM_TEMPLATE_PATH.exists():
         raise HTTPException(400, "No active GM template")
     rows = read_gm_catalog(config.GM_TEMPLATE_PATH)
@@ -95,7 +94,7 @@ def status():
 
 
 @router.get("/gm")
-def gm_listing():
+def gm_listing(user: str = Depends(verify_session)):
     """All GM catalog items grouped by sheet — used by the right-hand pane
     in the side-by-side reconciliation view."""
     if not config.GM_TEMPLATE_PATH.exists():

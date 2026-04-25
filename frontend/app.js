@@ -1,6 +1,21 @@
 /* OrderBridge — reconciliation desk, Alpine controller.
    Single-file state + methods, driven from x-data="orderBridge()". */
 
+// Global 401 interceptor — redirect to login on any unauthenticated response.
+(function () {
+  const _fetch = window.fetch.bind(window);
+  window.fetch = async function (...args) {
+    const r = await _fetch(...args);
+    if (r.status === 401) {
+      const url = typeof args[0] === 'string' ? args[0] : args[0]?.url ?? '';
+      if (!url.includes('/api/login') && !url.includes('/api/logout')) {
+        window.location.href = '/login';
+      }
+    }
+    return r;
+  };
+})();
+
 function orderBridge() {
   return {
     // ────────── UI state ──────────
@@ -478,6 +493,11 @@ function orderBridge() {
     todayStamp() {
       const d = new Date();
       return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase();
+    },
+
+    async logout() {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/login';
     },
   };
 }
