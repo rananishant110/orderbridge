@@ -42,7 +42,7 @@ async def refresh(onestop: UploadFile = File(...), gm: UploadFile = File(...), u
 
         conn.execute("DELETE FROM gm_catalog")
         conn.executemany(
-            """INSERT INTO gm_catalog(item_no, sheet, side, row_index, description,
+            """INSERT OR IGNORE INTO gm_catalog(item_no, sheet, side, row_index, description,
                                        description_normalized, price, available)
                VALUES(?,?,?,?,?,?,?,?)""",
             [(r.item_no, r.sheet, r.side, r.row_index, r.description,
