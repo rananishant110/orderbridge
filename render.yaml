@@ -3,6 +3,7 @@ services:
     name: orderbridge
     env: docker
     dockerfilePath: backend/Dockerfile
+    dockerContext: .
     # Render $7/mo Starter plan — enough for a single-tenant internal tool.
     # Change to "standard" ($25/mo) if you need more RAM for large catalogs.
     plan: starter
