@@ -9,11 +9,12 @@ One app:
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException, Response, status
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import config, db
-from .auth import clear_session, create_session
+from .auth import clear_session, create_session, verify_session
 from .routes import catalogs, orders
 
 
@@ -41,6 +42,16 @@ def create_app() -> FastAPI:
     def logout(response: Response):
         clear_session(response)
         return {"ok": True}
+
+    @app.get("/login", include_in_schema=False)
+    def login_page():
+        return RedirectResponse(url="/login.html")
+
+    from fastapi import Depends
+
+    @app.get("/api/me", tags=["auth"])
+    def me(user: str = Depends(verify_session)):
+        return {"user": user}
 
     app.include_router(orders.router)
     app.include_router(catalogs.router)

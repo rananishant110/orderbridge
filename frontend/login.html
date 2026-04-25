@@ -247,7 +247,7 @@
     // ── If already authenticated, skip login ──
     (async () => {
       try {
-        const r = await fetch('/api/catalogs/status');
+        const r = await fetch('/api/me');
         if (r.ok) window.location.href = '/';
       } catch {}
     })();

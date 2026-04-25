@@ -9,7 +9,7 @@
     if (r.status === 401) {
       const url = typeof args[0] === 'string' ? args[0] : args[0]?.url ?? '';
       if (!url.includes('/api/login') && !url.includes('/api/logout')) {
-        window.location.href = '/login';
+        window.location.href = '/login.html';
       }
     }
     return r;
