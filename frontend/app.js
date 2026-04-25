@@ -65,6 +65,8 @@ function orderBridge() {
     async init() {
       this.theme = localStorage.getItem('ob.theme') || 'dark';
       this.applyTheme();
+      const auth = await fetch('/api/me');
+      if (!auth.ok) return; // 401 interceptor handles redirect to /login.html
       await Promise.all([this.loadCatalogStatus(), this.loadHistory()]);
       this.bindShortcuts();
     },
