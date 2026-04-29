@@ -33,6 +33,30 @@ REST_LIST_SHEET = "REST LIST"
 AUTH_USER = os.environ.get("OB_USER", "onestop")
 AUTH_PASS = os.environ.get("OB_PASS", "changeme")
 
+# FreshBooks OAuth2 integration
+# Set FRESHBOOKS_CLIENT_ID and FRESHBOOKS_CLIENT_SECRET via env vars (or docker-compose).
+# FRESHBOOKS_REDIRECT_URI must match the redirect URI registered in your FreshBooks app.
+FRESHBOOKS_CLIENT_ID     = os.environ.get("FRESHBOOKS_CLIENT_ID", "")
+FRESHBOOKS_CLIENT_SECRET = os.environ.get("FRESHBOOKS_CLIENT_SECRET", "")
+FRESHBOOKS_REDIRECT_URI  = os.environ.get(
+    "FRESHBOOKS_REDIRECT_URI", "http://localhost:8000/api/freshbooks/callback"
+)
+FRESHBOOKS_CUSTOMER_ID   = os.environ.get("FRESHBOOKS_CUSTOMER_ID", "151069")
+# Known account ID — used as fallback if /me extraction fails
+FRESHBOOKS_ACCOUNT_ID    = os.environ.get("FRESHBOOKS_ACCOUNT_ID", "61wqkw")
+
+FRESHBOOKS_AUTH_URL    = "https://auth.freshbooks.com/service/auth/oauth/authorize"
+FRESHBOOKS_TOKEN_URL   = "https://auth.freshbooks.com/service/auth/oauth/token"
+FRESHBOOKS_API_BASE    = "https://api.freshbooks.com"
+
+FRESHBOOKS_DISCLAIMER = (
+    "Disclaimer:\n"
+    "*Seller has the ownership of all unpaid merchandise.\n"
+    "*All returns must be pre authorized & are on buyers' expense.\n"
+    "*Buyers are responsible for their state taxes and issues.\n"
+    "*If a check is returned for any reason, buyer will pay an additional charge of $50.00."
+)
+
 
 def ensure_dirs() -> None:
     for d in (STORAGE_DIR, TEMPLATES_DIR, RUNS_DIR):

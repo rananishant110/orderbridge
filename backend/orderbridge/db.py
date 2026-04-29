@@ -53,6 +53,16 @@ CREATE TABLE IF NOT EXISTS order_run (
     lines_unmatched INTEGER NOT NULL,
     output_path     TEXT
 );
+
+-- Single-row table for FreshBooks OAuth tokens (single-tenant app).
+-- id is always 1 — enforced by CHECK constraint.
+CREATE TABLE IF NOT EXISTS freshbooks_tokens (
+    id            INTEGER PRIMARY KEY CHECK (id = 1),
+    access_token  TEXT    NOT NULL,
+    refresh_token TEXT    NOT NULL,
+    account_id    TEXT    NOT NULL,
+    expires_at    REAL    NOT NULL   -- Unix timestamp (seconds)
+);
 """
 
 

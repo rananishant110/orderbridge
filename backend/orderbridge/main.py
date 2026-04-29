@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from . import config, db
 from .auth import clear_session, create_session, verify_session
-from .routes import catalogs, orders
+from .routes import catalogs, freshbooks, orders
 
 
 class _LoginRequest(BaseModel):
@@ -55,6 +55,7 @@ def create_app() -> FastAPI:
 
     app.include_router(orders.router)
     app.include_router(catalogs.router)
+    app.include_router(freshbooks.router)
 
     if config.FRONTEND_DIR.exists():
         app.mount(

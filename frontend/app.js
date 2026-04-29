@@ -19,6 +19,7 @@
 function orderBridge() {
   return {
     // ────────── UI state ──────────
+    currentTab: 'orders',   // 'orders' | 'freshbooks'
     theme: 'dark',
     cmdkOpen: false,
     refreshModalOpen: false,
@@ -61,14 +62,37 @@ function orderBridge() {
     // history
     runHistory: [],
 
+    // ────────── FreshBooks tab ──────────
+    fbConnected: false,
+    fbAccountId: '',
+    fbDragActive: false,
+    fbFileName: '',
+    fbParsing: false,
+    fbParsed: null,       // FbParseResponse from /api/freshbooks/parse
+    fbInvoicing: false,
+    fbInvoiceResult: null,
+    fbCustomerId: '151069',   // mirrors FRESHBOOKS_CUSTOMER_ID in config.py
+
     // ────────── lifecycle ──────────
     async init() {
       this.theme = localStorage.getItem('ob.theme') || 'dark';
       this.applyTheme();
       const auth = await fetch('/api/me');
       if (!auth.ok) return; // 401 interceptor handles redirect to /login.html
-      await Promise.all([this.loadCatalogStatus(), this.loadHistory()]);
+      await Promise.all([this.loadCatalogStatus(), this.loadHistory(), this.fbLoadStatus()]);
       this.bindShortcuts();
+
+      // Handle OAuth redirect-back from FreshBooks
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('fb_connected')) {
+        this.currentTab = 'freshbooks';
+        this.toast('ok', 'FreshBooks connected successfully!');
+        window.history.replaceState({}, '', window.location.pathname);
+      } else if (params.get('fb_error')) {
+        this.currentTab = 'freshbooks';
+        this.toast('err', 'FreshBooks connection failed — please try again.');
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     },
 
     applyTheme() {
@@ -500,6 +524,102 @@ function orderBridge() {
     async logout() {
       await fetch('/api/logout', { method: 'POST' });
       window.location.href = '/login';
+    },
+
+    // ────────── FreshBooks tab ──────────
+    async fbLoadStatus() {
+      try {
+        const r = await fetch('/api/freshbooks/status');
+        if (r.ok) {
+          const s = await r.json();
+          this.fbConnected = s.connected;
+          this.fbAccountId = s.account_id || '';
+        }
+      } catch {}
+    },
+
+    async fbDisconnect() {
+      if (!confirm('Disconnect FreshBooks? You will need to reconnect to create invoices.')) return;
+      await fetch('/api/freshbooks/disconnect', { method: 'POST' });
+      this.fbConnected = false;
+      this.fbAccountId = '';
+      this.toast('info', 'FreshBooks disconnected.');
+    },
+
+    fbHandleFileInput(e) {
+      const f = e.target.files[0];
+      if (f) this.fbStartParse(f);
+    },
+    fbHandleDrop(e) {
+      this.fbDragActive = false;
+      const f = e.dataTransfer?.files?.[0];
+      if (f) this.fbStartParse(f);
+    },
+
+    async fbStartParse(file) {
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        this.toast('err', 'Only .pdf files are accepted here.');
+        return;
+      }
+      this.fbFileName = file.name;
+      this.fbParsing = true;
+      this.fbParsed = null;
+      this.fbInvoiceResult = null;
+      try {
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch('/api/freshbooks/parse', { method: 'POST', body: form });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          this.toast('err', `Parse failed: ${err.detail || res.status}`);
+          this.fbParsing = false;
+          return;
+        }
+        this.fbParsed = await res.json();
+        this.toast('ok', `Parsed ${this.fbParsed.items.length} items from PDF.`);
+      } catch (err) {
+        this.toast('err', 'Network error: ' + err.message);
+      } finally {
+        this.fbParsing = false;
+      }
+    },
+
+    async fbCreateInvoice() {
+      if (!this.fbParsed || this.fbInvoicing) return;
+      this.fbInvoicing = true;
+      try {
+        const res = await fetch('/api/freshbooks/invoice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_number: this.fbParsed.order_number,
+            order_date: this.fbParsed.order_date,
+            items: this.fbParsed.items,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          this.toast('err', `Invoice creation failed: ${err.detail || res.status}`);
+          return;
+        }
+        this.fbInvoiceResult = await res.json();
+        this.toast('ok', `Invoice #${this.fbInvoiceResult.invoice_number} created in FreshBooks.`);
+      } catch (err) {
+        this.toast('err', 'Network error: ' + err.message);
+      } finally {
+        this.fbInvoicing = false;
+      }
+    },
+
+    fbReset() {
+      this.fbFileName = '';
+      this.fbParsed = null;
+      this.fbInvoiceResult = null;
+      this.fbParsing = false;
+      this.fbInvoicing = false;
+      // Reset the file input so the same file can be re-selected
+      const input = document.getElementById('fb-pdf-file');
+      if (input) input.value = '';
     },
   };
 }

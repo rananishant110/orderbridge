@@ -148,8 +148,34 @@
     <div class="h-px bg-gradient-to-r from-transparent via-wheat-500/40 to-transparent"></div>
   </header>
 
+  <!-- ═══════════════ TAB BAR ═══════════════ -->
+  <div class="relative z-10 border-b border-ink-800 bg-ink-900/40">
+    <div class="px-6 flex items-center gap-1">
+      <button @click="currentTab = 'orders'"
+              :class="currentTab === 'orders'
+                ? 'border-b-2 border-wheat-500 text-ink-100'
+                : 'border-b-2 border-transparent text-ink-400 hover:text-ink-200'"
+              class="px-4 py-3 text-sm font-medium transition-colors">
+        <span class="flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Orders
+        </span>
+      </button>
+      <button @click="currentTab = 'freshbooks'"
+              :class="currentTab === 'freshbooks'
+                ? 'border-b-2 border-wheat-500 text-ink-100'
+                : 'border-b-2 border-transparent text-ink-400 hover:text-ink-200'"
+              class="px-4 py-3 text-sm font-medium transition-colors">
+        <span class="flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          FreshBooks Invoice
+        </span>
+      </button>
+    </div>
+  </div>
+
   <!-- ═══════════════ UPLOAD / HERO (when no run) ═══════════════ -->
-  <template x-if="!runId">
+  <template x-if="currentTab === 'orders' && !runId">
     <section class="relative z-10 px-6 pt-12 pb-20 max-w-[1400px] mx-auto">
       <!-- Marquee -->
       <div class="mb-12">
@@ -256,7 +282,7 @@
   </template>
 
   <!-- ═══════════════ RUN WORKSPACE ═══════════════ -->
-  <template x-if="runId">
+  <template x-if="currentTab === 'orders' && runId">
     <section class="relative z-10 flex flex-col" style="height:calc(100vh - 57px);">
 
       <!-- Run summary bar -->
@@ -602,6 +628,276 @@
           </div>
         </div>
       </div>
+    </section>
+  </template>
+
+  <!-- ═══════════════ FRESHBOOKS TAB ═══════════════ -->
+  <template x-if="currentTab === 'freshbooks'">
+    <section class="relative z-10 px-6 pt-10 pb-20 max-w-[1200px] mx-auto animate-fade-up">
+
+      <!-- Header -->
+      <div class="mb-8">
+        <p class="text-[11px] font-mono uppercase tracking-[0.3em] text-ink-400 mb-3">
+          <span class="inline-block w-1.5 h-1.5 bg-wheat-500 rounded-full align-middle mr-2"></span>
+          FreshBooks · Invoice from PDF
+        </p>
+        <h2 class="font-display text-[clamp(2rem,4vw,3.5rem)] leading-[0.95] tracking-tightest font-light">
+          Upload an <span class="italic text-wheat-500">OSD order PDF</span>
+          <br>to create a <span class="italic text-wheat-500">FreshBooks invoice</span>.
+        </h2>
+      </div>
+
+      <!-- Connection status bar -->
+      <div class="mb-6 rounded-xl border px-5 py-4 flex items-center gap-4"
+           :class="fbConnected
+             ? 'border-jade-500/30 bg-jade-500/[0.05]'
+             : 'border-ink-700 bg-ink-900/60'">
+        <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+             :class="fbConnected ? 'bg-jade-500/20' : 'bg-ink-800'">
+          <svg class="w-4 h-4" :class="fbConnected ? 'text-jade-500' : 'text-ink-400'"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <template x-if="fbConnected">
+            <div>
+              <p class="text-sm font-medium text-jade-500">Connected to FreshBooks</p>
+              <p class="text-[11px] font-mono text-ink-400 mt-0.5">
+                Account <span x-text="fbAccountId"></span>
+              </p>
+            </div>
+          </template>
+          <template x-if="!fbConnected">
+            <div>
+              <p class="text-sm font-medium text-ink-200">FreshBooks not connected</p>
+              <p class="text-[11px] text-ink-400 mt-0.5">Connect your account to create invoices.</p>
+            </div>
+          </template>
+        </div>
+        <template x-if="!fbConnected">
+          <a href="/api/freshbooks/connect"
+             class="btn-primary shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Connect FreshBooks
+          </a>
+        </template>
+        <template x-if="fbConnected">
+          <button @click="fbDisconnect()" class="btn-ghost text-ink-400 shrink-0 text-sm">
+            Disconnect
+          </button>
+        </template>
+      </div>
+
+      <!-- Upload + metadata row -->
+      <div class="grid lg:grid-cols-[1.4fr_1fr] gap-6 mb-6">
+
+        <!-- PDF drop zone -->
+        <label for="fb-pdf-file"
+               @dragover.prevent="fbDragActive = true"
+               @dragleave.prevent="fbDragActive = false"
+               @drop.prevent="fbHandleDrop($event)"
+               :class="fbDragActive
+                       ? 'border-wheat-500 bg-wheat-500/5 shadow-glow-wheat'
+                       : fbParsed
+                         ? 'border-jade-500/50 bg-jade-500/[0.03]'
+                         : 'border-ink-700 hover:border-wheat-500/50 hover:bg-ink-850/60'"
+               class="relative block cursor-pointer rounded-2xl border border-dashed
+                      transition-all duration-300 p-8 overflow-hidden group">
+          <div class="absolute top-0 right-0 text-[10px] font-mono tracking-widest uppercase
+                      text-ink-500 px-4 py-2">01 · INGEST</div>
+          <div class="flex items-start gap-5">
+            <div class="relative shrink-0 w-14 h-14 rounded-xl bg-ink-850 border border-ink-700
+                        flex items-center justify-center group-hover:border-wheat-500/60 transition-colors">
+              <svg class="w-6 h-6" :class="fbParsed ? 'text-jade-500' : 'text-wheat-500'"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <template x-if="!fbParsed">
+                  <g><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></g>
+                </template>
+                <template x-if="fbParsed">
+                  <path d="M20 6 9 17l-5-5"/>
+                </template>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <template x-if="!fbParsed && !fbParsing">
+                <div>
+                  <h3 class="font-display text-xl leading-tight">Drop an OSD Sales Order PDF</h3>
+                  <p class="mt-1 text-sm text-ink-300">
+                    or <span class="text-wheat-500 underline underline-offset-4">click to browse</span> ·
+                    <span class="font-mono text-xs text-ink-400">.pdf only</span>
+                  </p>
+                </div>
+              </template>
+              <template x-if="fbParsing">
+                <div>
+                  <h3 class="font-display text-xl leading-tight text-wheat-500">Parsing PDF…</h3>
+                  <p class="mt-1 text-sm text-ink-300">Extracting line items from all pages.</p>
+                </div>
+              </template>
+              <template x-if="fbParsed && !fbParsing">
+                <div>
+                  <h3 class="font-display text-xl leading-tight text-jade-500"
+                      x-text="fbFileName"></h3>
+                  <p class="mt-1 text-sm text-ink-300">
+                    <span class="font-mono text-jade-500" x-text="fbParsed.items.length"></span> items parsed ·
+                    <button @click.prevent="fbReset()" class="text-ink-400 hover:text-wheat-500 underline underline-offset-4">upload different file</button>
+                  </p>
+                </div>
+              </template>
+            </div>
+          </div>
+          <input type="file" id="fb-pdf-file" accept=".pdf" class="sr-only"
+                 @change="fbHandleFileInput($event)">
+        </label>
+
+        <!-- Order metadata card -->
+        <div class="rounded-2xl border border-ink-800 bg-ink-900/60 p-6 flex flex-col justify-center">
+          <template x-if="!fbParsed">
+            <div class="text-ink-400 italic text-sm text-center">Upload a PDF to see order details</div>
+          </template>
+          <template x-if="fbParsed">
+            <div class="space-y-4">
+              <div>
+                <p class="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-400">Order Number</p>
+                <p class="font-display text-3xl mt-1"
+                   x-text="fbParsed.order_number ? '#' + fbParsed.order_number : '—'"></p>
+              </div>
+              <div>
+                <p class="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-400">Order Date</p>
+                <p class="font-mono text-lg mt-1 text-ink-200" x-text="fbParsed.order_date || '—'"></p>
+              </div>
+              <div class="pt-2 border-t border-ink-800">
+                <p class="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-400">Line Items</p>
+                <div class="flex items-center gap-3 mt-1">
+                  <span class="font-mono text-2xl text-ink-100" x-text="fbParsed.items.length"></span>
+                  <template x-if="fbParsed.warnings && fbParsed.warnings.length">
+                    <span class="text-[11px] font-mono text-saffron-500 flex items-center gap-1">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.3L2 19h20L13.7 3.3a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                      <span x-text="fbParsed.warnings.length + ' warning(s)'"></span>
+                    </span>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Warnings banner -->
+      <template x-if="fbParsed && fbParsed.warnings && fbParsed.warnings.length">
+        <div class="mb-4 p-4 rounded-xl border border-saffron-500/30 bg-saffron-500/[0.06]">
+          <p class="text-[11px] font-mono uppercase tracking-wider text-saffron-500 mb-2">Parse warnings</p>
+          <template x-for="w in fbParsed.warnings" :key="w">
+            <p class="text-sm text-ink-300 font-mono" x-text="w"></p>
+          </template>
+        </div>
+      </template>
+
+      <!-- Review table -->
+      <template x-if="fbParsed && fbParsed.items.length">
+        <div class="rounded-2xl border border-ink-800 bg-ink-900/40 overflow-hidden mb-6">
+          <div class="absolute top-0 right-0"></div>
+
+          <!-- Table header -->
+          <div class="px-5 py-3 border-b border-ink-800 bg-ink-900/60 flex items-center gap-4
+                      text-[10px] font-mono uppercase tracking-wider text-ink-500">
+            <div class="w-20">Item</div>
+            <div class="flex-1">Description</div>
+            <div class="w-16 text-right">Unit</div>
+            <div class="w-20 text-right">Qty</div>
+            <div class="w-24 text-right">Unit Price</div>
+            <div class="w-24 text-right">Amount</div>
+          </div>
+
+          <!-- Rows -->
+          <div class="divide-y divide-ink-800/60 max-h-[480px] overflow-y-auto scroll-container">
+            <template x-for="(item, idx) in fbParsed.items" :key="item.item_code + idx">
+              <div class="flex items-center gap-4 px-5 py-3 group hover:bg-ink-850/40 transition-colors"
+                   :class="item.warning ? 'bg-saffron-500/[0.03]' : ''">
+                <div class="w-20 font-mono text-[11px] text-ink-400" x-text="item.item_code"></div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm truncate" x-text="item.description"></p>
+                  <template x-if="item.warning">
+                    <p class="text-[11px] font-mono text-saffron-500 mt-0.5" x-text="'⚠ ' + item.warning"></p>
+                  </template>
+                </div>
+                <div class="w-16 text-right font-mono text-[11px] text-ink-400" x-text="item.unit"></div>
+                <!-- Editable qty -->
+                <div class="w-20 text-right">
+                  <input type="number" min="0" step="0.5"
+                         :value="item.qty"
+                         @change="item.qty = parseFloat($event.target.value) || 0; item.amount = Math.round(item.qty * item.unit_price * 100) / 100"
+                         class="w-full text-right bg-transparent border-b border-ink-700
+                                focus:border-wheat-500 text-ink-100 font-mono text-sm px-1 focus:outline-none">
+                </div>
+                <!-- Editable unit price -->
+                <div class="w-24 text-right">
+                  <input type="number" min="0" step="0.01"
+                         :value="item.unit_price.toFixed(2)"
+                         @change="item.unit_price = parseFloat($event.target.value) || 0; item.amount = Math.round(item.qty * item.unit_price * 100) / 100"
+                         class="w-full text-right bg-transparent border-b border-ink-700
+                                focus:border-wheat-500 text-ink-100 font-mono text-sm px-1 focus:outline-none">
+                </div>
+                <div class="w-24 text-right font-mono text-sm text-ink-300"
+                     x-text="'$' + item.amount.toFixed(2)"></div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Footer total -->
+          <div class="px-5 py-3 border-t border-ink-800 bg-ink-900/60 flex items-center justify-end gap-4
+                      text-[11px] font-mono uppercase tracking-wider">
+            <span class="text-ink-400">Total</span>
+            <span class="text-wheat-500 text-base"
+                  x-text="'$' + fbParsed.items.reduce((s, i) => s + i.amount, 0).toFixed(2)"></span>
+          </div>
+        </div>
+      </template>
+
+      <!-- Action row -->
+      <template x-if="fbParsed && fbParsed.items.length">
+        <div class="flex items-center gap-4">
+          <button @click="fbCreateInvoice()"
+                  :disabled="fbInvoicing || !!fbInvoiceResult || !fbConnected"
+                  :class="(fbInvoicing || fbInvoiceResult || !fbConnected) ? 'opacity-60 cursor-not-allowed' : ''"
+                  :title="!fbConnected ? 'Connect FreshBooks first' : ''"
+                  class="btn-primary">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+            <span x-text="fbInvoicing ? 'Creating invoice…' : 'Create FreshBooks Invoice'"></span>
+          </button>
+          <button @click="fbReset()" class="btn-ghost text-ink-400">Reset</button>
+          <span class="ml-auto text-[11px] font-mono text-ink-400">
+            <span x-text="fbParsed.items.length"></span> items ·
+            customer #<span x-text="fbCustomerId"></span>
+          </span>
+        </div>
+      </template>
+
+      <!-- Success banner -->
+      <template x-if="fbInvoiceResult">
+        <div class="mt-6 p-5 rounded-2xl border border-jade-500/30 bg-jade-500/[0.06] flex items-center gap-5 animate-fade-up">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-jade-500/20 flex items-center justify-center">
+            <svg class="w-5 h-5 text-jade-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div class="flex-1">
+            <p class="font-display text-xl text-jade-500">Invoice created!</p>
+            <p class="text-sm text-ink-300 mt-1">
+              Invoice <span class="font-mono text-ink-100" x-text="'#' + fbInvoiceResult.invoice_number"></span>
+              · status <span class="font-mono text-ink-100" x-text="fbInvoiceResult.status"></span>
+            </p>
+          </div>
+          <template x-if="fbInvoiceResult.freshbooks_url">
+            <a :href="fbInvoiceResult.freshbooks_url" target="_blank" class="btn-primary shrink-0">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open in FreshBooks
+            </a>
+          </template>
+        </div>
+      </template>
+
     </section>
   </template>
 

@@ -15,6 +15,9 @@ storage/templates/
 # OS
 .DS_Store
 
+# Local secrets — never commit
+.env
+
 # Claude Code session state
 .claude/
 

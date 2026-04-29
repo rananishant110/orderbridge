@@ -16,6 +16,8 @@ OrderBridge is a single-tenant internal web app that converts a filled **OneStop
 | rapidfuzz | 3.10.1 | Fuzzy description matching (C++ backend) |
 | pydantic | 2.9.2 | Request/response schemas |
 | python-multipart | 0.0.17 | Multipart file upload support |
+| pdfplumber | 0.11.4 | PDF text extraction (OSD order PDFs) |
+| httpx | 0.27.2 | Async HTTP client (FreshBooks API calls) |
 | sqlite3 | stdlib | Persistent mapping/catalog storage |
 
 ### Frontend
@@ -61,11 +63,16 @@ docker build -f backend/Dockerfile -t orderbridge .
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `OB_USER` | `onestop` | HTTP Basic username |
-| `OB_PASS` | `changeme` | HTTP Basic password — **change in production** |
+| `OB_USER` | `onestop` | Login username |
+| `OB_PASS` | `changeme` | Login password — **change in production** |
 | `OB_STORAGE_DIR` | `<repo-root>/storage` | Directory for templates, run outputs, and the SQLite DB |
+| `FRESHBOOKS_CLIENT_ID` | `""` | FreshBooks OAuth2 app client ID |
+| `FRESHBOOKS_CLIENT_SECRET` | `""` | FreshBooks OAuth2 app client secret |
+| `FRESHBOOKS_REDIRECT_URI` | `http://localhost:8000/api/freshbooks/callback` | Must match URI registered in FreshBooks developer portal |
+| `FRESHBOOKS_ACCOUNT_ID` | `61wqkw` | FreshBooks account ID (fallback if `/me` extraction fails) |
+| `FRESHBOOKS_CUSTOMER_ID` | `151069` | FreshBooks customer ID to attach to created invoices |
 
-All config lives in `backend/orderbridge/config.py` — matching thresholds (`AUTO_ACCEPT_SCORE`, `REVIEW_FLOOR_SCORE`) are there too.
+All config lives in `backend/orderbridge/config.py` — matching thresholds (`AUTO_ACCEPT_SCORE`, `REVIEW_FLOOR_SCORE`) and FreshBooks OAuth URLs are there too.
 
 ---
 
@@ -93,12 +100,14 @@ OrderBridge/
 │   │   ├── cli.py              ← Phase-1 CLI (match without web layer)
 │   │   ├── routes/
 │   │   │   ├── orders.py       ← /api/orders/* (upload, apply, download, history)
-│   │   │   └── catalogs.py     ← /api/catalogs/* (refresh, search, status, gm)
+│   │   │   ├── catalogs.py     ← /api/catalogs/* (refresh, search, status, gm)
+│   │   │   └── freshbooks.py   ← /api/freshbooks/* (OAuth2 flow + parse + invoice)
 │   │   └── services/
 │   │       ├── normalize.py    ← text normalization + pack-size extraction
 │   │       ├── excel_reader.py ← READ-ONLY openpyxl parsers (OnestopRow, GmRow)
 │   │       ├── excel_writer.py ← writes ORDER cells into a GM template copy
-│   │       └── matching.py     ← GmIndex + match_row + match_all (core logic)
+│   │       ├── matching.py     ← GmIndex + match_row + match_all (core logic)
+│   │       └── pdf_parser.py   ← pdfplumber-based OSD Sales Order PDF parser
 │   └── tests/
 │       ├── test_normalize.py       ← unit tests for normalize/pack-size funcs
 │       ├── test_matching.py        ← unit tests for matching priority logic
@@ -186,7 +195,7 @@ Thresholds are in `config.py` as `AUTO_ACCEPT_SCORE = 0.92` and `REVIEW_FLOOR_SC
 
 3. **In-memory run staging** — between upload and apply, runs live in `_RUN_STAGING` dict (in-memory). A server restart loses them; the UI re-uploads. This is by design (see PLAN.md §6.6).
 
-4. **No auth on most routes** — auth was removed in the current implementation (`LOCAL_USER = "local"` constant used). The `auth.py` module exists but is not wired into the routers. If you add auth back, import `require_user` as a FastAPI `Depends`.
+4. **Cookie session auth** — login is enforced via `verify_session` (cookie-based). All API routes except `/api/freshbooks/connect` and `/api/freshbooks/callback` require a valid session. The OAuth callback routes are intentionally unauthenticated so the browser can complete the FreshBooks redirect flow before a session exists.
 
 5. **GM sheet names are hardcoded** — `GM_PRODUCT_SHEETS` in `excel_reader.py` lists all expected sheet names. If GM adds a new sheet, it must be added there.
 
@@ -201,6 +210,25 @@ Thresholds are in `config.py` as `AUTO_ACCEPT_SCORE = 0.92` and `REVIEW_FLOOR_SC
 ## Git Workflow
 
 - Single branch: `main`.
-- One commit in history: `bcd4854 Initial commit — OrderBridge v0.1`.
-- No PR process observed — direct commits to main.
-- Commit message style: short imperative summary with version/context suffix.
+- No PR process — direct commits to main.
+- Commit message style: `type: short imperative summary` (e.g. `feat:`, `fix:`, `docs:`).
+
+## FreshBooks Integration
+
+FreshBooks is a second feature tab in the UI — separate from the core GM order workflow.
+
+**OAuth2 flow (single-tenant):**
+1. User clicks "Connect FreshBooks" → `GET /api/freshbooks/connect` → browser redirects to FreshBooks consent screen.
+2. FreshBooks redirects back to `GET /api/freshbooks/callback?code=…` → server exchanges code for tokens → stores them in `freshbooks_tokens` SQLite table (single row, `id=1`) → redirects browser to `/?fb_connected=1`.
+3. UI detects `fb_connected` query param on load → switches to FreshBooks tab + shows success toast.
+4. Tokens auto-refresh (using `refresh_token`) when expired — transparent to the user.
+
+**Invoice flow:**
+1. User uploads an OSD Sales Order PDF → `POST /api/freshbooks/parse` → `pdf_parser.parse_pdf()` extracts line items → UI shows editable review table.
+2. User reviews/edits items → clicks "Create Invoice" → `POST /api/freshbooks/invoice` → server calls FreshBooks API → invoice created as **status 2 (outstanding/sent)**, with PO number and disclaimer terms attached.
+
+**Key details:**
+- `freshbooks_tokens` table enforces `id = 1` via `CHECK` constraint — only ever one row.
+- `FRESHBOOKS_DISCLAIMER` in `config.py` is stamped into every invoice's `terms` field.
+- PDF parser (`pdf_parser.py`) handles multi-page PDFs by stripping repeated column headers between pages. Column order in pdfplumber output: `ITEM_CODE DESCRIPTION UNIT QTY UNIT_PRICE AMOUNT`.
+- FreshBooks `customerid` is fixed via `FRESHBOOKS_CUSTOMER_ID` env var (default `151069` — OneStop Distribution).
