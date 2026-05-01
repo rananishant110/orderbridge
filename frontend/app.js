@@ -75,7 +75,7 @@ function orderBridge() {
 
     // ────────── lifecycle ──────────
     async init() {
-      this.theme = localStorage.getItem('ob.theme') || 'dark';
+      this.theme = localStorage.getItem('ob.theme') || 'light';
       this.applyTheme();
       const auth = await fetch('/api/me');
       if (!auth.ok) return; // 401 interceptor handles redirect to /login.html

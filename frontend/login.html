@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,210 +7,140 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
-            sans: ['"Bricolage Grotesque"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
           },
           colors: {
-            ink: {
-              950: '#0B0907', 900: '#111010', 850: '#17130F', 800: '#1F1A15',
-              700: '#2A231C', 600: '#3A3128', 500: '#544537', 400: '#7A6A5A',
-              300: '#A89683', 200: '#D6C8B4', 100: '#F0E5D3', 50: '#FAF5EB',
-            },
-            wheat: { 500: '#E5A849', 400: '#F0BE6A', 300: '#F6D396', 600: '#C68A2F', 700: '#9A6A1F' },
-            jade:    { 500: '#56B893', 600: '#3E9E7B' },
-            saffron: { 500: '#E08A2C', 600: '#BE6F1B' },
-            rose:    { 500: '#D97070', 600: '#B85353' },
+            brand:     '#18E299',
+            'brand-lt':'#d4fae8',
+            'brand-dk':'#0fa76e',
+            near:      '#0d0d0d',
+            g700:      '#333333',
+            g500:      '#666666',
+            g400:      '#888888',
+            g200:      '#e5e5e5',
+            g100:      '#f5f5f5',
+            g50:       '#fafafa',
+            ob_danger: '#d45656',
           },
           keyframes: {
-            'fade-up': { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+            'fade-up': { '0%': { opacity: 0, transform: 'translateY(8px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
           },
-          animation: {
-            'fade-up': 'fade-up .5s cubic-bezier(0.2, 0.9, 0.2, 1) both',
-          },
+          animation: { 'fade-up': 'fade-up .35s ease-out both' },
         }
       }
     }
   </script>
 
   <style>
-    :root {
-      --ink-950: #0B0907; --ink-900: #111010; --ink-850: #17130F; --ink-800: #1F1A15;
-      --ink-700: #2A231C; --ink-600: #3A3128; --ink-500: #544537; --ink-400: #7A6A5A;
-      --ink-300: #A89683; --ink-200: #D6C8B4; --ink-100: #F0E5D3;
-      --wheat-500: #E5A849; --wheat-600: #C68A2F;
-      --rose-500: #D97070;
-    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    ::selection { background: rgba(24,226,153,0.2); }
 
-    body { font-feature-settings: "ss01","cv02","cv11","zero"; }
-    .font-display { font-variation-settings: "opsz" 144, "SOFT" 30; }
-
-    /* Grain overlay — same SVG noise as index.html */
-    .grain {
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 0.9  0 0 0 0 0.7  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-      background-size: 200px 200px;
-      mix-blend-mode: overlay;
-    }
-
-    /* Primary button — exact match to index.html */
-    .btn-primary {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-      width: 100%; padding: 0.6rem 1rem;
-      background: linear-gradient(180deg, var(--wheat-500) 0%, var(--wheat-600) 100%);
-      color: var(--ink-950);
-      font-weight: 600; font-size: 13.5px; letter-spacing: 0.01em;
-      border-radius: 0.65rem;
-      border: 1px solid rgba(246,211,150,0.35);
-      box-shadow: inset 0 1px 0 rgba(255,246,224,0.35), 0 10px 30px -12px rgba(229,168,73,0.55);
-      transition: transform .15s ease, filter .15s ease;
-      cursor: pointer;
-      font-family: "Bricolage Grotesque", sans-serif;
-    }
-    .btn-primary:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
-    .btn-primary:active:not(:disabled) { transform: translateY(0); }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    /* Input fields */
-    .field {
-      width: 100%;
-      background: var(--ink-850);
-      border: 1px solid var(--ink-700);
-      border-radius: 0.55rem;
-      padding: 0.6rem 1rem;
-      font-size: 13.5px;
-      color: var(--ink-100);
-      font-family: "JetBrains Mono", monospace;
-      outline: none;
-      transition: border-color .15s ease, box-shadow .15s ease;
-    }
-    .field:focus {
-      border-color: rgba(229,168,73,0.6);
-      box-shadow: 0 0 0 3px rgba(229,168,73,0.12);
-    }
-    .field::placeholder { color: var(--ink-500); }
-
-    /* Light mode */
-    html:not(.dark) body { background: #F5EFE3; color: #1A1612; }
-    html:not(.dark) { --ink-950:#F5EFE3;--ink-900:#EFE6D3;--ink-850:#F7F1E4;--ink-800:#E4D9C2;--ink-700:#CDBFA3;--ink-600:#A8977B;--ink-500:#7A6A54;--ink-400:#5C4E3C;--ink-300:#332D25;--ink-200:#221D17;--ink-100:#1A1612; }
-    html:not(.dark) .grain { mix-blend-mode: multiply; opacity: 0.06; }
-
-    /* Spinner */
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { animation: spin .7s linear infinite; }
 
-    ::selection { background: rgba(229,168,73,0.35); color: var(--ink-100); }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
   </style>
 </head>
 
-<body class="font-sans bg-ink-950 text-ink-100 antialiased min-h-screen flex items-center justify-center relative">
+<body class="font-sans bg-white text-near antialiased min-h-screen flex items-center justify-center relative overflow-hidden">
 
-  <!-- Grain overlay -->
-  <div class="grain pointer-events-none fixed inset-0 opacity-[0.045] z-50"></div>
+  <!-- Atmospheric gradient -->
+  <div class="pointer-events-none fixed inset-0"
+       style="background: radial-gradient(ellipse 90% 60% at 50% -5%, rgba(24,226,153,0.10), transparent 65%);"></div>
 
-  <!-- Warm vignette -->
-  <div class="pointer-events-none fixed inset-0 z-[1]"
-       style="background:
-         radial-gradient(1100px 700px at 75% -5%, rgba(229,168,73,0.09), transparent 60%),
-         radial-gradient(800px 600px at -5% 105%, rgba(86,184,147,0.05), transparent 60%);"></div>
+  <!-- Subtle grid texture -->
+  <div class="pointer-events-none fixed inset-0 opacity-[0.025]"
+       style="background-image: linear-gradient(rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,1) 1px, transparent 1px);
+              background-size: 40px 40px;"></div>
 
-  <!-- Decorative horizontal rule that spans the full width at the vertical center -->
-  <div class="pointer-events-none fixed left-0 right-0 z-[2]"
-       style="top:50%; height:1px; background: linear-gradient(90deg, transparent 0%, rgba(229,168,73,0.06) 20%, rgba(229,168,73,0.1) 50%, rgba(229,168,73,0.06) 80%, transparent 100%);"></div>
+  <main class="relative z-10 w-full max-w-[400px] px-5 py-12 animate-fade-up">
 
-  <main class="relative z-10 w-full max-w-[380px] px-5 py-12 animate-fade-up">
-
-    <!-- ── Logo ── -->
+    <!-- Logo -->
     <div class="flex flex-col items-center mb-10">
-      <div class="relative mb-5">
-        <!-- Icon -->
-        <div class="w-14 h-14 rounded-[18px] bg-gradient-to-br from-wheat-400 to-wheat-600
-                    flex items-center justify-center
-                    shadow-[0_0_0_1px_rgba(229,168,73,0.3),0_20px_60px_-15px_rgba(229,168,73,0.5)]">
-          <svg viewBox="0 0 24 24" class="w-7 h-7 text-ink-900" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-            <path d="M4 17c3-2 5-2 8 0s5 2 8 0" />
-            <path d="M4 12c3-2 5-2 8 0s5 2 8 0" />
-            <path d="M4 7c3-2 5-2 8 0s5 2 8 0" />
-          </svg>
-        </div>
-        <!-- Glow pulse -->
-        <div class="absolute inset-0 rounded-[18px] animate-pulse opacity-30"
-             style="box-shadow: 0 0 30px 8px rgba(229,168,73,0.3); animation: pulse-glow 2.5s ease-in-out infinite;"></div>
+      <div class="w-12 h-12 rounded-xl bg-brand flex items-center justify-center mb-5
+                  shadow-[0_8px_24px_-8px_rgba(24,226,153,0.45)]">
+        <svg viewBox="0 0 24 24" class="w-6 h-6 text-near" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M4 17c3-2 5-2 8 0s5 2 8 0"/>
+          <path d="M4 12c3-2 5-2 8 0s5 2 8 0"/>
+          <path d="M4 7c3-2 5-2 8 0s5 2 8 0"/>
+        </svg>
       </div>
-
-      <h1 class="font-display italic text-[2rem] font-light tracking-tight leading-none">
-        Order<span class="text-wheat-500">Bridge</span>
-      </h1>
-      <p class="mt-2.5 text-[9.5px] font-mono uppercase tracking-[0.32em] text-ink-500">
-        Reconciliation Desk&nbsp;&nbsp;·&nbsp;&nbsp;OneStop ↦ GrainMarket
+      <h1 class="text-[1.75rem] font-semibold tracking-[-0.5px] leading-none">OrderBridge</h1>
+      <p class="mt-2 font-mono text-[11px] uppercase tracking-[0.55px] text-g400">
+        OneStop → GrainMarket
       </p>
     </div>
 
-    <!-- ── Card ── -->
-    <div class="rounded-2xl border border-ink-800 bg-ink-900/80 backdrop-blur-sm overflow-hidden
-                shadow-[0_32px_80px_-20px_rgba(0,0,0,0.6)]">
+    <!-- Card -->
+    <div class="bg-white rounded-2xl border border-black/[0.06] shadow-[rgba(0,0,0,0.06)_0px_4px_24px]">
 
-      <!-- Wheat accent top strip -->
-      <div class="h-px bg-gradient-to-r from-transparent via-wheat-500/50 to-transparent"></div>
-
-      <div class="p-7">
-        <!-- Section label -->
-        <p class="text-[10px] font-mono uppercase tracking-[0.28em] text-ink-500 mb-5">
-          <span class="inline-block w-1.5 h-1.5 rounded-full bg-wheat-500 mr-2 align-middle"
-                style="box-shadow:0 0 6px 2px rgba(229,168,73,0.5)"></span>
-          Staff access
-        </p>
+      <div class="px-8 py-8">
+        <p class="font-mono text-[11px] uppercase tracking-[0.55px] text-g400 mb-6">Staff access</p>
 
         <form id="login-form" novalidate class="space-y-4">
 
           <!-- Username -->
           <div>
-            <label for="username"
-                   class="block text-[10.5px] font-mono uppercase tracking-widest text-ink-400 mb-1.5">
+            <label for="username" class="block text-[12px] font-medium text-g500 mb-1.5">
               Username
             </label>
             <input id="username" type="text" autocomplete="username" spellcheck="false"
-                   class="field" placeholder="onestop" />
+                   placeholder="onestop"
+                   class="w-full px-4 py-2.5 rounded-full border border-black/[0.08]
+                          text-[14px] font-medium text-near placeholder:text-g400
+                          focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15
+                          transition-colors bg-white" />
           </div>
 
           <!-- Password -->
           <div>
-            <label for="password"
-                   class="block text-[10.5px] font-mono uppercase tracking-widest text-ink-400 mb-1.5">
+            <label for="password" class="block text-[12px] font-medium text-g500 mb-1.5">
               Password
             </label>
             <input id="password" type="password" autocomplete="current-password"
-                   class="field" placeholder="••••••••" />
+                   placeholder="••••••••"
+                   class="w-full px-4 py-2.5 rounded-full border border-black/[0.08]
+                          text-[14px] font-medium text-near placeholder:text-g400
+                          focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15
+                          transition-colors bg-white" />
           </div>
 
-          <!-- Error message -->
+          <!-- Error -->
           <div id="error-msg"
-               class="hidden items-center gap-2.5 rounded-lg border border-rose-500/30 bg-rose-500/8 px-4 py-3">
-            <svg class="w-3.5 h-3.5 shrink-0 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+               class="hidden items-center gap-2.5 rounded-xl border border-ob_danger/20 bg-ob_danger/[0.04] px-4 py-3">
+            <svg class="w-3.5 h-3.5 shrink-0 text-ob_danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            <p id="error-text" class="text-[12.5px] font-mono text-rose-500">Invalid credentials — try again.</p>
+            <p id="error-text" class="text-[12px] font-medium text-ob_danger">Invalid credentials — try again.</p>
           </div>
 
           <!-- Submit -->
           <div class="pt-1">
-            <button type="submit" id="submit-btn" class="btn-primary">
-              <!-- Arrow icon -->
+            <button type="submit" id="submit-btn"
+                    class="w-full inline-flex items-center justify-center gap-2
+                           px-6 py-2.5 rounded-full
+                           bg-near text-white text-[14px] font-medium
+                           shadow-[rgba(0,0,0,0.06)_0px_1px_2px]
+                           hover:opacity-90 active:opacity-80
+                           disabled:opacity-50 disabled:cursor-not-allowed
+                           transition-opacity cursor-pointer">
               <svg id="btn-icon" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
                 <polyline points="10 17 15 12 10 7"/>
                 <line x1="15" y1="12" x2="3" y2="12"/>
               </svg>
-              <!-- Spinner (hidden by default) -->
               <svg id="btn-spinner" class="w-4 h-4 shrink-0 hidden spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round"/>
               </svg>
@@ -220,28 +150,14 @@
         </form>
       </div>
 
-      <!-- Bottom strip -->
-      <div class="h-px bg-gradient-to-r from-transparent via-ink-800 to-transparent"></div>
-      <div class="px-7 py-3 flex items-center justify-between">
-        <span class="text-[9.5px] font-mono uppercase tracking-widest text-ink-600">
-          Internal tool
-        </span>
-        <span class="text-[9.5px] font-mono uppercase tracking-widest text-ink-600">
-          OneStop Distribution
-        </span>
+      <!-- Footer strip -->
+      <div class="border-t border-black/[0.05] px-8 py-3 flex items-center justify-between">
+        <span class="font-mono text-[10px] uppercase tracking-[0.5px] text-g400">Internal tool</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.5px] text-g400">OneStop Distribution</span>
       </div>
     </div>
 
   </main>
-
-  <style>
-    @keyframes pulse-glow {
-      0%, 100% { opacity: 0.25; }
-      50%       { opacity: 0.55; }
-    }
-    /* bg-rose-500/8 not in Tailwind CDN */
-    .bg-rose-500\/8 { background: rgba(217,112,112,0.08); }
-  </style>
 
   <script>
     // ── If already authenticated, skip login ──
@@ -252,18 +168,14 @@
       } catch {}
     })();
 
-    // ── Theme ──
-    const saved = localStorage.getItem('ob.theme');
-    if (saved === 'light') document.documentElement.classList.remove('dark');
-
     // ── Form ──
-    const form     = document.getElementById('login-form');
-    const errEl    = document.getElementById('error-msg');
-    const errText  = document.getElementById('error-text');
-    const btn      = document.getElementById('submit-btn');
-    const btnText  = document.getElementById('btn-text');
-    const btnIcon  = document.getElementById('btn-icon');
-    const spinner  = document.getElementById('btn-spinner');
+    const form    = document.getElementById('login-form');
+    const errEl   = document.getElementById('error-msg');
+    const errText = document.getElementById('error-text');
+    const btn     = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnIcon = document.getElementById('btn-icon');
+    const spinner = document.getElementById('btn-spinner');
 
     function setLoading(on) {
       btn.disabled = on;
@@ -276,7 +188,6 @@
       errText.textContent = msg;
       errEl.classList.remove('hidden');
       errEl.classList.add('flex');
-      // Shake the card
       errEl.animate([
         { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' },
         { transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' },
@@ -322,7 +233,6 @@
       }
     });
 
-    // ── Clear error on typing ──
     ['username', 'password'].forEach(id => {
       document.getElementById(id).addEventListener('input', () => {
         errEl.classList.add('hidden');

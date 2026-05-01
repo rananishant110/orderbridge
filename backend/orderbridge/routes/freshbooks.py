@@ -303,7 +303,7 @@ async def create_invoice(
             "create_date": body.order_date or datetime.date.today().isoformat(),
             "po_number": body.order_number,
             "terms": config.FRESHBOOKS_DISCLAIMER,
-            "status": 2,   # 1=draft, 2=sent/outstanding — skips draft state so invoice is immediately visible
+            "status": 1,   # 1=draft, 2=sent/outstanding — skips draft state so invoice is immediately visible
             "lines": lines,
         }
     }

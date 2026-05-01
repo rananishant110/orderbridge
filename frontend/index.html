@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OrderBridge — Reconciliation Desk</title>
+  <title>OrderBridge</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -16,333 +16,314 @@
       theme: {
         extend: {
           fontFamily: {
-            display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
-            sans: ['"Bricolage Grotesque"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
           },
           colors: {
-            ink: {
-              950: '#0B0907',
-              900: '#111010',
-              850: '#17130F',
-              800: '#1F1A15',
-              700: '#2A231C',
-              600: '#3A3128',
-              500: '#544537',
-              400: '#7A6A5A',
-              300: '#A89683',
-              200: '#D6C8B4',
-              100: '#F0E5D3',
-              50:  '#FAF5EB',
-            },
-            wheat: {
-              500: '#E5A849',
-              400: '#F0BE6A',
-              300: '#F6D396',
-              600: '#C68A2F',
-              700: '#9A6A1F',
-            },
-            jade:   { 500: '#56B893', 600: '#3E9E7B' },
-            saffron:{ 500: '#E08A2C', 600: '#BE6F1B' },
-            rose:   { 500: '#D97070', 600: '#B85353' },
-          },
-          letterSpacing: { tightest: '-0.04em' },
-          boxShadow: {
-            'glow-wheat': '0 0 0 1px rgba(229,168,73,0.35), 0 10px 40px -10px rgba(229,168,73,0.35)',
-            'inset-hair': 'inset 0 -1px 0 rgba(255,255,255,0.04)',
+            brand:      '#18E299',
+            'brand-lt': '#d4fae8',
+            'brand-dk': '#0fa76e',
+            near:       '#0d0d0d',
+            g700:       '#333333',
+            g500:       '#666666',
+            g400:       '#888888',
+            g200:       '#e5e5e5',
+            g100:       '#f5f5f5',
+            g50:        '#fafafa',
+            ob_amber:   '#c37d0d',
+            ob_danger:  '#d45656',
           },
           keyframes: {
             'fade-up': { '0%': { opacity: 0, transform: 'translateY(6px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-            'pulse-amber': { '0%,100%': { boxShadow: '0 0 0 0 rgba(229,168,73,0.4)' }, '50%': { boxShadow: '0 0 0 6px rgba(229,168,73,0)' } },
           },
-          animation: {
-            'fade-up': 'fade-up .4s ease-out both',
-            'pulse-amber': 'pulse-amber 1.8s ease-in-out infinite',
-          },
+          animation: { 'fade-up': 'fade-up .35s ease-out both' },
         }
       }
     }
   </script>
 
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles.css?v=2" />
   <script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
 
 <body x-data="orderBridge()" x-cloak
-      class="font-sans bg-ink-950 text-ink-100 antialiased overflow-x-hidden min-h-screen relative">
+      class="font-sans bg-white text-near antialiased min-h-screen dark:bg-near dark:text-[#ededed]">
 
-  <!-- Grain overlay — the texture that keeps this from feeling like another dark SaaS. -->
-  <div class="grain pointer-events-none fixed inset-0 opacity-[0.045] z-[60]"></div>
-  <!-- Warm vignette — subtle radial to give the page depth. -->
-  <div class="pointer-events-none fixed inset-0 z-[1]"
-       style="background: radial-gradient(1200px 800px at 80% -10%, rgba(229,168,73,0.08), transparent 60%),
-                          radial-gradient(900px 600px at -10% 110%, rgba(86,184,147,0.05), transparent 60%);"></div>
+  <!-- ═══ NAV ═══ -->
+  <header class="sticky top-0 z-20 bg-white/90 dark:bg-[#0d0d0d]/90 backdrop-blur-md border-b border-black/[0.05] dark:border-white/[0.08]">
+    <div class="px-6 h-14 flex items-center gap-4 max-w-[1400px] mx-auto">
 
-  <!-- ═══════════════ TOP BAR ═══════════════ -->
-  <header class="relative z-20 border-b border-ink-800/80 backdrop-blur supports-[backdrop-filter]:bg-ink-950/70">
-    <div class="px-6 h-14 flex items-center gap-6">
-      <div class="flex items-center gap-3">
-        <div class="relative w-8 h-8 rounded-[10px] bg-gradient-to-br from-wheat-400 to-wheat-600
-                    flex items-center justify-center shadow-[0_0_0_1px_rgba(229,168,73,0.25)]">
-          <svg viewBox="0 0 24 24" class="w-4 h-4 text-ink-900" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-            <path d="M4 17c3-2 5-2 8 0s5 2 8 0" />
-            <path d="M4 12c3-2 5-2 8 0s5 2 8 0" />
-            <path d="M4 7c3-2 5-2 8 0s5 2 8 0" />
+      <!-- Logo -->
+      <div class="flex items-center gap-2.5 shrink-0">
+        <div class="w-7 h-7 rounded-lg bg-brand flex items-center justify-center">
+          <svg viewBox="0 0 24 24" class="w-4 h-4 text-[#0d0d0d]" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <path d="M4 17c3-2 5-2 8 0s5 2 8 0"/>
+            <path d="M4 12c3-2 5-2 8 0s5 2 8 0"/>
+            <path d="M4 7c3-2 5-2 8 0s5 2 8 0"/>
           </svg>
         </div>
-        <div class="leading-none">
-          <h1 class="font-display italic text-[20px] font-medium tracking-tight">
-            Order<span class="text-wheat-500">Bridge</span>
-          </h1>
-          <p class="mt-1 text-[10px] uppercase tracking-[0.22em] text-ink-400">
-            Reconciliation Desk · OneStop ↦ GrainMarket
-          </p>
-        </div>
+        <span class="text-[15px] font-semibold tracking-tight">OrderBridge</span>
       </div>
 
-      <div class="h-6 w-px bg-ink-800"></div>
+      <div class="w-px h-4 bg-black/10 dark:bg-white/10 shrink-0"></div>
 
-      <!-- Catalog freshness pills -->
-      <div class="hidden md:flex items-center gap-3 text-[11px] font-mono uppercase tracking-wider">
-        <span class="text-ink-400">Catalogs</span>
-        <span class="flex items-center gap-1.5 text-ink-200">
+      <!-- Catalog status -->
+      <div class="hidden md:flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.6px]">
+        <span class="text-g400">Catalogs</span>
+        <span class="flex items-center gap-1.5 text-g500 dark:text-[#a0a0a0]">
           <span class="w-1.5 h-1.5 rounded-full"
-                :class="catalogStatus?.onestop_template_present ? 'bg-jade-500' : 'bg-rose-500'"></span>
-          OneStop <span class="text-ink-400" x-text="fmtAge(catalogStatus?.onestop_uploaded_at)"></span>
+                :class="catalogStatus?.onestop_template_present ? 'bg-brand' : 'bg-ob_danger'"></span>
+          OneStop
+          <span class="text-g400 ml-0.5" x-text="fmtAge(catalogStatus?.onestop_uploaded_at)"></span>
         </span>
-        <span class="flex items-center gap-1.5 text-ink-200">
+        <span class="flex items-center gap-1.5 text-g500 dark:text-[#a0a0a0]">
           <span class="w-1.5 h-1.5 rounded-full"
-                :class="catalogStatus?.gm_template_present ? 'bg-jade-500' : 'bg-rose-500'"></span>
-          GrainMarket <span class="text-ink-400" x-text="fmtAge(catalogStatus?.gm_uploaded_at)"></span>
+                :class="catalogStatus?.gm_template_present ? 'bg-brand' : 'bg-ob_danger'"></span>
+          GrainMarket
+          <span class="text-g400 ml-0.5" x-text="fmtAge(catalogStatus?.gm_uploaded_at)"></span>
         </span>
       </div>
 
-      <div class="ml-auto flex items-center gap-2">
+      <!-- Nav actions -->
+      <div class="ml-auto flex items-center gap-1">
         <button @click="historyOpen = true"
-                class="btn-ghost"
-                title="Run history (H)">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
-          <span class="hidden sm:inline">History</span>
+                class="w-8 h-8 rounded-lg flex items-center justify-center text-g500 dark:text-[#a0a0a0]
+                       hover:bg-black/[0.05] dark:hover:bg-white/[0.06] hover:text-near dark:hover:text-[#ededed]
+                       transition-colors" title="History (H)">
+          <svg class="w-[17px] h-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
         </button>
         <button @click="refreshModalOpen = true"
-                class="btn-ghost"
-                title="Refresh weekly catalogs (R)">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v5h5"/><path d="M20.5 12A8.5 8.5 0 1 1 6 6.5L3 9"/></svg>
-          <span class="hidden sm:inline">Refresh catalogs</span>
+                class="w-8 h-8 rounded-lg flex items-center justify-center text-g500 dark:text-[#a0a0a0]
+                       hover:bg-black/[0.05] dark:hover:bg-white/[0.06] hover:text-near dark:hover:text-[#ededed]
+                       transition-colors" title="Refresh catalogs (R)">
+          <svg class="w-[17px] h-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v5h5"/><path d="M20.5 12A8.5 8.5 0 1 1 6 6.5L3 9"/></svg>
         </button>
-        <button @click="cmdkOpen = true" class="btn-ghost font-mono text-[11px]" title="Command palette">
-          <span class="hidden sm:inline">⌘K</span>
-          <span class="sm:hidden">⌘</span>
+
+        <div class="w-px h-4 bg-black/[0.08] dark:bg-white/[0.08] mx-1"></div>
+
+        <button @click="cmdkOpen = true"
+                class="h-8 px-2.5 rounded-lg flex items-center justify-center
+                       font-mono text-[12px] font-medium text-g500 dark:text-[#a0a0a0]
+                       hover:bg-black/[0.05] dark:hover:bg-white/[0.06] hover:text-near dark:hover:text-[#ededed]
+                       transition-colors" title="Command palette (⌘K)">⌘K</button>
+        <button @click="toggleTheme()"
+                class="w-8 h-8 rounded-lg flex items-center justify-center text-g500 dark:text-[#a0a0a0]
+                       hover:bg-black/[0.05] dark:hover:bg-white/[0.06] hover:text-near dark:hover:text-[#ededed]
+                       transition-colors" title="Toggle theme">
+          <template x-if="theme === 'dark'">
+            <svg class="w-[17px] h-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </template>
+          <template x-if="theme !== 'dark'">
+            <svg class="w-[17px] h-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+          </template>
         </button>
-        <button @click="toggleTheme()" class="btn-ghost" :title="theme === 'dark' ? 'Switch to light' : 'Switch to dark'">
-          <svg x-show="theme === 'dark'" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-          <svg x-show="theme !== 'dark'" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
-        </button>
-        <button @click="logout()" class="btn-ghost text-ink-400" title="Sign out">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <button @click="logout()"
+                class="w-8 h-8 rounded-lg flex items-center justify-center text-g400
+                       hover:bg-black/[0.05] dark:hover:bg-white/[0.06] hover:text-ob_danger
+                       transition-colors" title="Sign out">
+          <svg class="w-[17px] h-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
       </div>
     </div>
-
-    <!-- The thin wheat rule — a signature detail. -->
-    <div class="h-px bg-gradient-to-r from-transparent via-wheat-500/40 to-transparent"></div>
   </header>
 
-  <!-- ═══════════════ TAB BAR ═══════════════ -->
-  <div class="relative z-10 border-b border-ink-800 bg-ink-900/40">
-    <div class="px-6 flex items-center gap-1">
+  <!-- ═══ TAB BAR ═══ -->
+  <div class="border-b border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-[#0d0d0d]">
+    <div class="px-6 flex items-center max-w-[1400px] mx-auto">
       <button @click="currentTab = 'orders'"
               :class="currentTab === 'orders'
-                ? 'border-b-2 border-wheat-500 text-ink-100'
-                : 'border-b-2 border-transparent text-ink-400 hover:text-ink-200'"
-              class="px-4 py-3 text-sm font-medium transition-colors">
-        <span class="flex items-center gap-2">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Orders
-        </span>
+                ? 'border-b-2 border-brand text-near dark:text-[#ededed]'
+                : 'border-b-2 border-transparent text-g400 hover:text-g700 dark:hover:text-[#ededed]'"
+              class="flex items-center gap-2 px-4 py-3 text-[14px] font-medium transition-colors">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+        </svg>
+        Orders
       </button>
       <button @click="currentTab = 'freshbooks'"
               :class="currentTab === 'freshbooks'
-                ? 'border-b-2 border-wheat-500 text-ink-100'
-                : 'border-b-2 border-transparent text-ink-400 hover:text-ink-200'"
-              class="px-4 py-3 text-sm font-medium transition-colors">
-        <span class="flex items-center gap-2">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-          FreshBooks Invoice
-        </span>
+                ? 'border-b-2 border-brand text-near dark:text-[#ededed]'
+                : 'border-b-2 border-transparent text-g400 hover:text-g700 dark:hover:text-[#ededed]'"
+              class="flex items-center gap-2 px-4 py-3 text-[14px] font-medium transition-colors">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+        </svg>
+        FreshBooks
       </button>
     </div>
   </div>
 
-  <!-- ═══════════════ UPLOAD / HERO (when no run) ═══════════════ -->
+  <!-- ═══ HERO / UPLOAD (no run) ═══ -->
   <template x-if="currentTab === 'orders' && !runId">
-    <section class="relative z-10 px-6 pt-12 pb-20 max-w-[1400px] mx-auto">
-      <!-- Marquee -->
-      <div class="mb-12">
-        <p class="text-[11px] font-mono uppercase tracking-[0.3em] text-ink-400 mb-3">
-          <span class="inline-block w-1.5 h-1.5 bg-wheat-500 rounded-full align-middle mr-2"></span>
+    <div class="relative overflow-hidden">
+      <!-- Atmospheric gradient -->
+      <div class="absolute inset-0 pointer-events-none"
+           style="background: radial-gradient(ellipse 100% 50% at 50% -10%, rgba(24,226,153,0.10), transparent 65%)"></div>
+
+      <section class="relative px-6 pt-16 pb-20 max-w-[1200px] mx-auto animate-fade-up">
+        <p class="font-mono text-[11px] uppercase tracking-[0.65px] text-g400 mb-4">
           Session · <span x-text="todayStamp()"></span>
         </p>
-        <h2 class="font-display text-[clamp(2.5rem,6vw,5.5rem)] leading-[0.95] tracking-tightest font-light">
-          Convert a filled <span class="italic text-wheat-500 font-normal">OneStop</span>
-          <br>order into a complete
-          <br><span class="italic text-wheat-500 font-normal">GrainMarket</span> supplier form.
-        </h2>
-        <p class="mt-6 max-w-xl text-ink-300 text-[15px] leading-relaxed">
-          Drop a filled order form below. OrderBridge normalizes descriptions, scores candidates against
-          the GrainMarket catalog, and lets you reconcile any ambiguous lines side-by-side before writing
-          quantities into the supplier template.
-        </p>
-      </div>
 
-      <!-- Dropzone -->
-      <div class="grid lg:grid-cols-[1.6fr_1fr] gap-6">
-        <label for="order-file"
-               @dragover.prevent="dragActive = true"
-               @dragleave.prevent="dragActive = false"
-               @drop.prevent="handleDrop($event)"
-               :class="dragActive
-                       ? 'border-wheat-500 bg-wheat-500/5 shadow-glow-wheat'
-                       : 'border-ink-700 hover:border-wheat-500/50 hover:bg-ink-850/60'"
-               class="relative block cursor-pointer rounded-2xl border border-dashed
-                      transition-all duration-300 p-10 overflow-hidden group">
-          <div class="absolute top-0 right-0 text-[10px] font-mono tracking-widest uppercase
-                      text-ink-500 px-4 py-2">01 · INGEST</div>
-          <div class="flex items-start gap-6">
-            <div class="relative shrink-0 w-16 h-16 rounded-xl bg-ink-850 border border-ink-700
-                        flex items-center justify-center group-hover:border-wheat-500/60 transition-colors">
-              <svg class="w-7 h-7 text-wheat-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-                <path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
-              </svg>
-              <span class="absolute -bottom-1 -right-1 w-3 h-3 bg-wheat-500 rounded-full animate-pulse-amber"></span>
-            </div>
-            <div class="flex-1 min-w-0">
-              <h3 class="font-display text-2xl leading-tight">
-                Drop a filled OneStop order here
-              </h3>
-              <p class="mt-1 text-sm text-ink-300">
-                or <span class="text-wheat-500 underline underline-offset-4 decoration-wheat-500/40">click to browse</span> ·
-                <span class="font-mono text-xs text-ink-400">.xlsx only</span>
+        <h2 class="text-[clamp(2.2rem,5vw,3.8rem)] font-semibold leading-[1.10] tracking-[-0.8px] mb-4 max-w-2xl">
+          Convert OneStop orders into<br>
+          <span class="text-brand-dk dark:text-brand">GrainMarket</span> supplier forms.
+        </h2>
+        <p class="text-[17px] leading-[1.6] text-g500 dark:text-[#a0a0a0] max-w-lg mb-12">
+          Drop a filled order form. OrderBridge matches descriptions, scores candidates,
+          and lets you reconcile ambiguous lines before writing to the GM template.
+        </p>
+
+        <div class="grid lg:grid-cols-[1.5fr_1fr] gap-5">
+
+          <!-- Drop zone -->
+          <label for="order-file"
+                 @dragover.prevent="dragActive = true"
+                 @dragleave.prevent="dragActive = false"
+                 @drop.prevent="handleDrop($event)"
+                 :class="dragActive
+                   ? 'border-brand bg-brand-lt/20 shadow-[0_0_0_3px_rgba(24,226,153,0.12)]'
+                   : 'border-black/[0.08] dark:border-white/[0.08] hover:border-brand/40 hover:bg-g50 dark:hover:bg-[#141414]'"
+                 class="relative block cursor-pointer rounded-2xl border-2 border-dashed
+                        bg-white dark:bg-[#141414] transition-all duration-200 p-10 group">
+            <div class="flex flex-col items-center text-center">
+              <div class="w-14 h-14 rounded-2xl bg-brand-lt dark:bg-brand/10 flex items-center justify-center mb-5">
+                <svg class="w-7 h-7 text-brand-dk dark:text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+                </svg>
+              </div>
+              <h3 class="text-[20px] font-semibold tracking-[-0.2px] mb-1">Drop a filled OneStop order</h3>
+              <p class="text-[15px] text-g500 dark:text-[#a0a0a0] mb-7">
+                or <span class="text-brand-dk dark:text-brand underline underline-offset-4 decoration-brand/40">click to browse</span>
+                <span class="font-mono text-[11px] text-g400 ml-1">.xlsx only</span>
               </p>
-              <div class="mt-6 flex items-center gap-6 text-[11px] font-mono uppercase tracking-wider text-ink-400">
-                <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-jade-500 rounded-full"></span>Auto ≥ 92%</span>
-                <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-saffron-500 rounded-full"></span>Review 75–91%</span>
-                <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-rose-500 rounded-full"></span>Unmatched &lt; 75%</span>
+              <div class="flex items-center gap-5 font-mono text-[11px] uppercase tracking-[0.6px]">
+                <span class="flex items-center gap-1.5 text-brand-dk dark:text-brand">
+                  <span class="w-1.5 h-1.5 bg-brand rounded-full"></span>Auto ≥ 92%
+                </span>
+                <span class="flex items-center gap-1.5 text-ob_amber">
+                  <span class="w-1.5 h-1.5 bg-ob_amber rounded-full"></span>Review 75–91%
+                </span>
+                <span class="flex items-center gap-1.5 text-ob_danger">
+                  <span class="w-1.5 h-1.5 bg-ob_danger rounded-full"></span>No match
+                </span>
               </div>
             </div>
-          </div>
-          <input type="file" id="order-file" accept=".xlsx" class="sr-only"
-                 @change="handleFileInput($event)">
-          <!-- Grid overlay for effect -->
-          <svg class="absolute inset-0 -z-10 opacity-[0.08]" width="100%" height="100%">
-            <defs>
-              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="0.5"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)"/>
-          </svg>
-        </label>
+            <input type="file" id="order-file" accept=".xlsx" class="sr-only"
+                   @change="handleFileInput($event)">
+          </label>
 
-        <!-- Recent runs -->
-        <aside class="rounded-2xl border border-ink-800 bg-ink-900/60 p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h4 class="font-display text-lg">Recent runs</h4>
-            <button @click="loadHistory()" class="text-[11px] font-mono uppercase tracking-widest text-ink-400 hover:text-wheat-500">
-              Refresh
-            </button>
-          </div>
-          <template x-if="runHistory.length === 0">
-            <p class="text-sm text-ink-400 italic">No runs yet this session.</p>
-          </template>
-          <ul class="space-y-3">
-            <template x-for="r in runHistory.slice(0, 6)" :key="r.uploaded_at + r.filename">
-              <li class="group flex items-center justify-between gap-3 pb-3 border-b border-ink-800/60 last:border-0">
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm truncate" x-text="r.filename"></p>
-                  <p class="text-[11px] font-mono uppercase tracking-wider text-ink-400 mt-0.5">
-                    <span x-text="fmtWhen(r.uploaded_at)"></span> ·
-                    <span class="text-jade-500" x-text="r.lines_auto + ' auto'"></span> ·
-                    <span class="text-saffron-500" x-text="r.lines_reviewed + ' rev'"></span> ·
-                    <span class="text-rose-500" x-text="r.lines_unmatched + ' unm'"></span>
-                  </p>
-                </div>
-                <a x-show="r.download_url" :href="r.download_url"
-                   class="shrink-0 text-[11px] font-mono uppercase tracking-widest text-wheat-500 hover:text-wheat-400">
-                  ↓ xlsx
-                </a>
-              </li>
+          <!-- Recent runs -->
+          <div class="rounded-2xl border border-black/[0.05] dark:border-white/[0.08]
+                      bg-white dark:bg-[#141414] shadow-[rgba(0,0,0,0.03)_0px_2px_4px] p-6">
+            <div class="flex items-center justify-between mb-5">
+              <h4 class="text-[16px] font-semibold tracking-[-0.2px]">Recent runs</h4>
+              <button @click="loadHistory()"
+                      class="font-mono text-[11px] uppercase tracking-[0.6px] text-g400 hover:text-brand-dk dark:hover:text-brand transition-colors">
+                Refresh
+              </button>
+            </div>
+            <template x-if="runHistory.length === 0">
+              <p class="text-[15px] text-g400">No runs yet.</p>
             </template>
-          </ul>
-        </aside>
-      </div>
+            <ul class="space-y-3">
+              <template x-for="r in runHistory.slice(0, 6)" :key="r.uploaded_at + r.filename">
+                <li class="flex items-start gap-3 pb-3 border-b border-black/[0.05] dark:border-white/[0.05] last:border-0 last:pb-0">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[14px] font-medium truncate" x-text="r.filename"></p>
+                    <p class="font-mono text-[11px] uppercase tracking-[0.5px] text-g400 mt-0.5">
+                      <span x-text="fmtWhen(r.uploaded_at)"></span> ·
+                      <span class="text-brand-dk dark:text-brand" x-text="r.lines_auto + ' auto'"></span> ·
+                      <span class="text-ob_amber" x-text="r.lines_reviewed + ' rev'"></span> ·
+                      <span class="text-ob_danger" x-text="r.lines_unmatched + ' unm'"></span>
+                    </p>
+                  </div>
+                  <a x-show="r.download_url" :href="r.download_url"
+                     class="shrink-0 font-mono text-[11px] uppercase tracking-[0.6px] text-brand-dk dark:text-brand hover:opacity-70 transition-opacity">
+                    ↓ xlsx
+                  </a>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </div>
 
-      <p x-show="uploadStatus" class="mt-6 font-mono text-sm text-ink-300" x-text="uploadStatus"></p>
-    </section>
+        <p x-show="uploadStatus" class="mt-5 font-mono text-[13px] text-g500" x-text="uploadStatus"></p>
+      </section>
+    </div>
   </template>
 
-  <!-- ═══════════════ RUN WORKSPACE ═══════════════ -->
+  <!-- ═══ RUN WORKSPACE ═══ -->
   <template x-if="currentTab === 'orders' && runId">
-    <section class="relative z-10 flex flex-col" style="height:calc(100vh - 57px);">
+    <section class="flex flex-col" style="height:calc(100vh - 96px)">
 
-      <!-- Run summary bar -->
-      <div class="shrink-0 border-b border-ink-800 bg-ink-900/70 backdrop-blur">
-        <div class="px-6 py-4 flex flex-wrap items-center gap-6">
+      <!-- Summary bar -->
+      <div class="shrink-0 border-b border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-[#0d0d0d]">
+        <div class="px-5 py-3 flex flex-wrap items-center gap-4 max-w-[1400px] mx-auto">
+
           <div class="min-w-0">
-            <p class="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-400">Active run</p>
-            <p class="font-display text-lg truncate max-w-[40ch]" x-text="filename"></p>
-            <p class="text-[11px] font-mono text-ink-400 mt-0.5">
-              run_id <span class="text-ink-200" x-text="runId"></span> ·
-              <span x-text="counts.total"></span> lines
-            </p>
+            <p class="font-mono text-[11px] uppercase tracking-[0.6px] text-g400 mb-0.5">Active run</p>
+            <p class="text-[15px] font-semibold tracking-[-0.2px] truncate max-w-[34ch]" x-text="filename"></p>
           </div>
 
-          <div class="flex items-center gap-3">
-            <div class="stat-chip stat-auto" @click="filter = filter==='auto' ? 'all' : 'auto'"
-                 :class="{'ring-1 ring-jade-500/60': filter==='auto'}">
-              <span class="dot bg-jade-500"></span>
-              <span class="font-mono text-xl" x-text="counts.auto"></span>
-              <span class="text-[10px] uppercase tracking-wider text-ink-400">Auto</span>
-            </div>
-            <div class="stat-chip stat-review" @click="filter = filter==='review' ? 'all' : 'review'"
-                 :class="{'ring-1 ring-saffron-500/60': filter==='review'}">
-              <span class="dot bg-saffron-500"></span>
-              <span class="font-mono text-xl" x-text="counts.review"></span>
-              <span class="text-[10px] uppercase tracking-wider text-ink-400">Review</span>
-            </div>
-            <div class="stat-chip stat-unmatched" @click="filter = filter==='unmatched' ? 'all' : 'unmatched'"
-                 :class="{'ring-1 ring-rose-500/60': filter==='unmatched'}">
-              <span class="dot bg-rose-500"></span>
-              <span class="font-mono text-xl" x-text="counts.unmatched"></span>
-              <span class="text-[10px] uppercase tracking-wider text-ink-400">Unmatched</span>
-            </div>
+          <!-- Stat chips -->
+          <div class="flex items-center gap-2">
+            <button @click="filter = filter==='auto' ? 'all' : 'auto'"
+                    :class="filter==='auto'
+                      ? 'border-brand/40 bg-brand-lt/40 dark:bg-brand/10'
+                      : 'border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-[#141414]'"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border transition-all">
+              <span class="w-1.5 h-1.5 bg-brand rounded-full"></span>
+              <span class="font-mono text-[17px] font-semibold" x-text="counts.auto"></span>
+              <span class="font-mono text-[10px] uppercase tracking-[0.5px] text-g400">Auto</span>
+            </button>
+            <button @click="filter = filter==='review' ? 'all' : 'review'"
+                    :class="filter==='review'
+                      ? 'border-ob_amber/40 bg-ob_amber/5'
+                      : 'border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-[#141414]'"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border transition-all">
+              <span class="w-1.5 h-1.5 bg-ob_amber rounded-full"></span>
+              <span class="font-mono text-[17px] font-semibold" x-text="counts.review"></span>
+              <span class="font-mono text-[10px] uppercase tracking-[0.5px] text-g400">Review</span>
+            </button>
+            <button @click="filter = filter==='unmatched' ? 'all' : 'unmatched'"
+                    :class="filter==='unmatched'
+                      ? 'border-ob_danger/40 bg-ob_danger/5'
+                      : 'border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-[#141414]'"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border transition-all">
+              <span class="w-1.5 h-1.5 bg-ob_danger rounded-full"></span>
+              <span class="font-mono text-[17px] font-semibold" x-text="counts.unmatched"></span>
+              <span class="font-mono text-[10px] uppercase tracking-[0.5px] text-g400">None</span>
+            </button>
           </div>
 
           <!-- Coverage bar -->
-          <div class="flex-1 min-w-[200px] max-w-md">
-            <div class="flex items-baseline justify-between text-[10px] font-mono uppercase tracking-wider text-ink-400 mb-1.5">
+          <div class="min-w-[160px] max-w-xs flex-1">
+            <div class="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.6px] text-g400 mb-1.5">
               <span>Coverage</span>
-              <span class="text-ink-100 text-base" x-text="(coverage*100).toFixed(0) + '%'"></span>
+              <span class="text-near dark:text-[#ededed] font-semibold text-[14px]"
+                    x-text="(coverage*100).toFixed(0) + '%'"></span>
             </div>
-            <div class="h-1.5 bg-ink-800 rounded-full overflow-hidden relative">
-              <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-wheat-500 to-jade-500 transition-all duration-700"
+            <div class="h-1 bg-black/[0.05] dark:bg-white/[0.08] rounded-full overflow-hidden">
+              <div class="h-full bg-brand rounded-full transition-all duration-700"
                    :style="`width: ${coverage*100}%`"></div>
             </div>
           </div>
 
+          <!-- Actions -->
           <div class="flex items-center gap-2 ml-auto">
-            <button @click="bulkAcceptAbove(0.85)" class="btn-ghost" title="Accept all review items ≥ 85%">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6 9 17l-5-5"/></svg>
+            <button @click="bulkAcceptAbove(0.85)" class="btn-ghost text-[13px]">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
               Accept ≥85%
             </button>
-            <button @click="resetRun()" class="btn-ghost text-ink-300" title="Start a new run">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            <button @click="resetRun()" class="btn-ghost text-[13px] text-g500">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
               Discard
             </button>
-            <button @click="applyRun()" class="btn-primary"
+            <button @click="applyRun()" class="btn-primary text-[13px]"
                     :disabled="applying"
-                    :class="{'opacity-60 cursor-not-allowed': applying}">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    :class="{'opacity-50 cursor-not-allowed': applying}">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 3v14"/><path d="M7 12l5 5 5-5"/><path d="M4 21h16"/>
               </svg>
               <span x-text="applying ? 'Writing…' : 'Apply & download'"></span>
@@ -350,178 +331,157 @@
           </div>
         </div>
 
-        <!-- Apply result toast -->
+        <!-- Apply result bar -->
         <div x-show="applyResult" x-transition
-             class="mx-6 mb-4 p-4 rounded-xl border border-jade-500/30 bg-jade-500/10 flex items-center gap-4">
-          <svg class="w-5 h-5 text-jade-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-          <div class="flex-1">
-            <p class="font-display text-lg">GM form ready.</p>
-            <p class="text-sm text-ink-300">
-              Wrote <span class="font-mono text-jade-500" x-text="applyResult?.lines_written"></span> line(s)
-              into the GrainMarket template.
-            </p>
-          </div>
-          <a :href="applyResult?.download_url" class="btn-primary">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v14"/><path d="M7 12l5 5 5-5"/><path d="M4 21h16"/></svg>
+             class="mx-5 mb-3 px-5 py-3 rounded-2xl border border-brand/20 bg-brand-lt/25 dark:bg-brand/5 flex items-center gap-4">
+          <svg class="w-4 h-4 text-brand-dk dark:text-brand shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+          <p class="text-[14px] font-medium flex-1">
+            Wrote <span class="font-mono text-brand-dk dark:text-brand" x-text="applyResult?.lines_written"></span> line(s) to GrainMarket.
+          </p>
+          <a :href="applyResult?.download_url" class="btn-primary text-[13px] shrink-0">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v14"/><path d="M7 12l5 5 5-5"/><path d="M4 21h16"/></svg>
             Download .xlsx
           </a>
         </div>
       </div>
 
-      <!-- Split pane -->
-      <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
+      <!-- ═══ SPLIT PANE ═══ -->
+      <div class="flex-1 grid lg:grid-cols-2 overflow-hidden bg-g100/40 dark:bg-[#0a0a0a]">
 
-        <!-- ═══ LEFT PANE · ONESTOP ═══ -->
-        <div class="flex flex-col border-r border-ink-800 overflow-hidden">
-          <div class="shrink-0 px-6 py-3 flex items-center gap-3 border-b border-ink-800 bg-ink-900/40">
-            <p class="font-display text-base">OneStop order</p>
-            <span class="text-[10px] font-mono uppercase tracking-wider text-ink-400"
-                  x-text="`${filteredLines.length} of ${lines.length}`"></span>
+        <!-- LEFT · OneStop -->
+        <div class="flex flex-col border-r border-black/[0.05] dark:border-white/[0.05] bg-white dark:bg-[#0d0d0d] overflow-hidden">
+
+          <!-- Pane header -->
+          <div class="shrink-0 px-4 py-2.5 border-b border-black/[0.05] dark:border-white/[0.05] flex items-center gap-2 bg-g50/60 dark:bg-[#141414]/60">
+            <span class="text-[13px] font-semibold">OneStop order</span>
+            <span class="font-mono text-[11px] text-g400"
+                  x-text="`${filteredLines.length} / ${lines.length}`"></span>
             <div class="flex items-center gap-1 ml-auto">
-              <button @click="filter='all'" :class="filter==='all' ? 'pill-active' : 'pill-idle'">All</button>
-              <button @click="filter='review'" :class="filter==='review' ? 'pill-active' : 'pill-idle'">Review</button>
+              <button @click="filter='all'"       :class="filter==='all'       ? 'pill-active' : 'pill-idle'">All</button>
+              <button @click="filter='review'"    :class="filter==='review'    ? 'pill-active' : 'pill-idle'">Review</button>
               <button @click="filter='unmatched'" :class="filter==='unmatched' ? 'pill-active' : 'pill-idle'">Unmatched</button>
-              <button @click="filter='auto'" :class="filter==='auto' ? 'pill-active' : 'pill-idle'">Auto</button>
+              <button @click="filter='auto'"      :class="filter==='auto'      ? 'pill-active' : 'pill-idle'">Auto</button>
             </div>
             <div class="relative">
-              <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-              <input x-model="query" type="text" placeholder="Filter lines…"
-                     class="bg-ink-850 border border-ink-700 rounded-md pl-8 pr-3 py-1.5 text-sm w-44
-                            focus:outline-none focus:border-wheat-500/60 focus:ring-1 focus:ring-wheat-500/30
-                            placeholder:text-ink-500 font-mono">
+              <svg class="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-g400 pointer-events-none"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+              <input x-model="query" type="text" placeholder="Search…"
+                     class="bg-white dark:bg-[#1a1a1a] border border-black/[0.08] dark:border-white/[0.08] rounded-full pl-7 pr-3 py-1 text-[12px] w-28
+                            focus:outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/20
+                            placeholder:text-g400 font-mono">
             </div>
           </div>
 
-          <div class="flex-1 overflow-y-auto px-4 py-3 space-y-2 scroll-container" id="onestop-scroll">
+          <!-- Lines list -->
+          <div class="flex-1 overflow-y-auto p-3 space-y-2 scroll-container" id="onestop-scroll">
             <template x-for="line in filteredLines" :key="line.row_index">
               <article :id="'os-' + line.row_index"
                        @click="selectLine(line.row_index)"
                        :class="[
-                         'group relative rounded-xl border transition-all duration-200 cursor-pointer',
-                         line.bucket === 'auto'      ? 'border-ink-800 bg-ink-900/60 hover:border-jade-500/40' :
-                         line.bucket === 'review'    ? 'border-saffron-500/30 bg-saffron-500/[0.04] hover:border-saffron-500/60' :
-                                                       'border-rose-500/30 bg-rose-500/[0.04] hover:border-rose-500/60',
-                         selectedRowIndex === line.row_index ? 'ring-1 ring-wheat-500/70 shadow-glow-wheat' : ''
+                         'rounded-2xl border bg-white dark:bg-[#141414] transition-all duration-150 cursor-pointer',
+                         line.bucket === 'auto'
+                           ? 'border-black/[0.05] dark:border-white/[0.05] hover:border-brand/25 hover:shadow-[0_0_0_3px_rgba(24,226,153,0.05)]'
+                           : line.bucket === 'review'
+                           ? 'border-ob_amber/25 hover:border-ob_amber/45'
+                           : 'border-ob_danger/25 hover:border-ob_danger/45',
+                         selectedRowIndex === line.row_index
+                           ? 'ring-2 ring-brand/25 border-brand/30 shadow-[0_0_0_3px_rgba(24,226,153,0.07)]'
+                           : ''
                        ]">
                 <div class="p-4">
-                  <!-- Header row -->
-                  <div class="flex items-start gap-4">
-                    <div class="shrink-0 font-mono text-[11px] text-ink-500 w-10 text-right pt-0.5"
-                         x-text="'#' + String(line.row_index).padStart(3, '0')"></div>
-
+                  <div class="flex items-start gap-3">
+                    <span class="shrink-0 font-mono text-[10px] text-g400 pt-0.5 w-7 text-right"
+                          x-text="'#' + line.row_index"></span>
                     <div class="flex-1 min-w-0">
-                      <p class="font-medium leading-snug" x-text="line.onestop_desc"></p>
-                      <p class="mt-1 text-[11px] font-mono uppercase tracking-wider text-ink-400">
+                      <p class="text-[14px] font-medium leading-snug" x-text="line.onestop_desc"></p>
+                      <div class="mt-1 flex items-center gap-2 font-mono text-[11px] text-g400">
                         <span>Qty</span>
                         <input type="number" min="0" :value="line.qty"
-                               @click.stop
-                               @change="updateQty(line.row_index, $event.target.value)"
-                               class="w-14 bg-transparent border-b border-ink-700 focus:border-wheat-500
-                                      text-ink-100 font-mono text-sm px-1 focus:outline-none">
-                      </p>
+                               @click.stop @change="updateQty(line.row_index, $event.target.value)"
+                               class="w-12 bg-transparent border-b border-black/[0.08] dark:border-white/[0.08]
+                                      focus:border-brand text-near dark:text-[#ededed] font-mono text-[12px] px-1 focus:outline-none text-center">
+                      </div>
                     </div>
-
-                    <!-- Bucket badge -->
                     <div class="shrink-0">
                       <template x-if="line.bucket === 'auto'">
-                        <span class="badge-auto">
-                          <span class="w-1.5 h-1.5 bg-jade-500 rounded-full"></span>
-                          auto · <span class="font-mono" x-text="((line.picked?.score||1)*100).toFixed(0) + '%'"></span>
-                        </span>
+                        <span class="badge-auto">auto · <span x-text="((line.picked?.score||1)*100).toFixed(0)+'%'"></span></span>
                       </template>
                       <template x-if="line.bucket === 'review'">
-                        <span class="badge-review">
-                          <span class="w-1.5 h-1.5 bg-saffron-500 rounded-full"></span>
-                          review
-                        </span>
+                        <span class="badge-review">review</span>
                       </template>
                       <template x-if="line.bucket === 'unmatched'">
-                        <span class="badge-unmatched">
-                          <span class="w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
-                          no match
-                        </span>
+                        <span class="badge-unmatched">no match</span>
                       </template>
                     </div>
                   </div>
 
-                  <!-- Match / action row -->
-                  <div class="mt-3 pl-14">
-                    <!-- AUTO line: just show the picked GM item -->
+                  <!-- Match detail -->
+                  <div class="mt-3 pl-10">
                     <template x-if="line.bucket === 'auto' && line.picked">
-                      <div class="flex items-center gap-2 text-sm">
-                        <span class="text-ink-500">↦</span>
-                        <span class="font-mono text-wheat-500" x-text="'#' + line.picked.item_no"></span>
-                        <span class="text-ink-300 truncate" x-text="line.picked.description"></span>
-                        <span class="ml-auto text-[10px] font-mono uppercase tracking-wider text-ink-500"
+                      <div class="flex items-center gap-2 text-[12px]">
+                        <span class="text-g400">→</span>
+                        <span class="font-mono text-brand-dk dark:text-brand text-[11px]" x-text="'#' + line.picked.item_no"></span>
+                        <span class="text-g500 dark:text-[#a0a0a0] truncate" x-text="line.picked.description"></span>
+                        <span class="ml-auto font-mono text-[10px] text-g400 uppercase tracking-[0.4px] shrink-0"
                               x-text="line.picked.sheet"></span>
                       </div>
                     </template>
 
-                    <!-- REVIEW line: candidate picker -->
                     <template x-if="line.bucket === 'review'">
                       <div class="space-y-2">
-                        <div class="flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider text-ink-400">
-                          <span>↦ choose GM item</span>
-                          <span class="text-saffron-500" x-text="line.reason || ''"></span>
-                        </div>
-                        <div class="flex gap-2 overflow-x-auto no-scrollbar">
-                          <template x-for="(cand, idx) in line.candidates" :key="cand.item_no + '::' + cand.sheet">
+                        <p class="font-mono text-[11px] text-g400 uppercase tracking-[0.5px]">
+                          → choose GM item <span class="text-ob_amber" x-text="line.reason || ''"></span>
+                        </p>
+                        <div class="flex gap-1.5 flex-wrap">
+                          <template x-for="cand in line.candidates" :key="cand.item_no + '::' + cand.sheet">
                             <button @click.stop="pickCandidate(line.row_index, cand)"
-                                    :class="[
-                                      'cand-chip',
-                                      line.pickedKey === (cand.item_no + '::' + cand.sheet) ? 'cand-chip-active' : ''
-                                    ]">
-                              <span class="font-mono text-wheat-500" x-text="'#' + cand.item_no"></span>
-                              <span class="truncate max-w-[24ch]" x-text="cand.description"></span>
-                              <span class="font-mono text-[10px] text-ink-400" x-text="(cand.score*100).toFixed(0)+'%'"></span>
+                                    :class="line.pickedKey === (cand.item_no+'::'+cand.sheet) ? 'cand-chip-active' : 'cand-chip'">
+                              <span class="font-mono text-[10px]" x-text="'#'+cand.item_no"></span>
+                              <span class="truncate max-w-[18ch]" x-text="cand.description"></span>
+                              <span class="font-mono text-[10px] opacity-60" x-text="(cand.score*100).toFixed(0)+'%'"></span>
                             </button>
                           </template>
-                          <button @click.stop="openManualSearch(line.row_index)" class="cand-chip cand-chip-ghost">
-                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-                            search catalog
+                          <button @click.stop="openManualSearch(line.row_index)" class="cand-chip-ghost">
+                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                            Search
                           </button>
                         </div>
-                        <div class="flex items-center gap-3 text-[11px] font-mono uppercase tracking-wider">
-                          <label class="flex items-center gap-1.5 cursor-pointer text-ink-300 hover:text-ink-100">
-                            <input type="radio" :name="'choice-'+line.row_index" value="accept"
-                                   :checked="line.choice === 'accept'"
-                                   @change="line.choice = 'accept'"
-                                   class="accent-wheat-500">
-                            accept
+                        <div class="flex items-center gap-4 font-mono text-[11px]">
+                          <label class="flex items-center gap-1.5 cursor-pointer text-g500 hover:text-near dark:hover:text-[#ededed]">
+                            <input type="radio" :name="'c-'+line.row_index" value="accept"
+                                   :checked="line.choice==='accept'" @change="line.choice='accept'"
+                                   class="accent-brand"> Accept
                           </label>
-                          <label class="flex items-center gap-1.5 cursor-pointer text-ink-300 hover:text-ink-100">
-                            <input type="radio" :name="'choice-'+line.row_index" value="onestop_only"
-                                   :checked="line.choice === 'onestop_only'"
-                                   @change="line.choice = 'onestop_only'"
-                                   class="accent-wheat-500">
-                            OneStop-only
+                          <label class="flex items-center gap-1.5 cursor-pointer text-g500 hover:text-near dark:hover:text-[#ededed]">
+                            <input type="radio" :name="'c-'+line.row_index" value="onestop_only"
+                                   :checked="line.choice==='onestop_only'" @change="line.choice='onestop_only'"
+                                   class="accent-brand"> Skip
                           </label>
-                          <label class="flex items-center gap-1.5 cursor-pointer text-ink-400 ml-auto">
-                            <input type="checkbox" :checked="line.remember" @change="line.remember = $event.target.checked"
-                                   class="accent-wheat-500">
-                            remember
+                          <label class="flex items-center gap-1.5 cursor-pointer text-g400 ml-auto">
+                            <input type="checkbox" :checked="line.remember" @change="line.remember=$event.target.checked"
+                                   class="accent-brand"> Remember
                           </label>
                         </div>
                       </div>
                     </template>
 
-                    <!-- UNMATCHED line: search-to-assign -->
                     <template x-if="line.bucket === 'unmatched'">
                       <div class="space-y-2">
-                        <div class="flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider text-ink-400">
-                          <span>↦ stays OneStop-only</span>
-                          <span class="text-rose-500" x-text="line.reason || ''"></span>
-                        </div>
-                        <button @click.stop="openManualSearch(line.row_index)" class="cand-chip cand-chip-ghost w-full justify-center">
-                          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-                          Search GrainMarket catalog to assign manually
+                        <p class="font-mono text-[11px] text-g400 uppercase tracking-[0.5px]">
+                          → stays OneStop-only <span class="text-ob_danger" x-text="line.reason || ''"></span>
+                        </p>
+                        <button @click.stop="openManualSearch(line.row_index)" class="cand-chip-ghost w-full justify-center">
+                          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                          Search catalog to assign
                         </button>
                         <template x-if="line.picked">
-                          <div class="flex items-center gap-2 text-sm p-2 rounded-md bg-jade-500/5 border border-jade-500/20">
-                            <span class="text-jade-500">✓ manual</span>
-                            <span class="font-mono text-wheat-500" x-text="'#' + line.picked.item_no"></span>
-                            <span class="text-ink-200 truncate" x-text="line.picked.description"></span>
-                            <button @click.stop="clearManualPick(line.row_index)" class="ml-auto text-ink-400 hover:text-rose-500 text-xs">×</button>
+                          <div class="flex items-center gap-2 text-[13px] p-2.5 rounded-xl border border-brand/20 bg-brand-lt/20 dark:bg-brand/5">
+                            <svg class="w-3.5 h-3.5 text-brand-dk dark:text-brand shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+                            <span class="font-mono text-brand-dk dark:text-brand text-[11px]" x-text="'#'+line.picked.item_no"></span>
+                            <span class="truncate text-[13px]" x-text="line.picked.description"></span>
+                            <button @click.stop="clearManualPick(line.row_index)" class="ml-auto text-g400 hover:text-ob_danger text-base leading-none">×</button>
                           </div>
                         </template>
                       </div>
@@ -532,98 +492,106 @@
             </template>
 
             <template x-if="filteredLines.length === 0">
-              <p class="text-center text-ink-400 italic py-12">Nothing matches your filter.</p>
+              <p class="text-center text-g400 py-16 text-[15px]">Nothing matches your filter.</p>
             </template>
           </div>
         </div>
 
-        <!-- ═══ RIGHT PANE · GRAINMARKET ═══ -->
-        <div class="flex flex-col overflow-hidden">
-          <div class="shrink-0 px-6 py-3 flex items-center gap-3 border-b border-ink-800 bg-ink-900/40">
-            <p class="font-display text-base">GrainMarket order form</p>
-            <span class="text-[10px] font-mono uppercase tracking-wider text-ink-400"
-                  x-text="`${filledGmCount} of ${totalGmItems} filled`"></span>
+        <!-- RIGHT · GrainMarket -->
+        <div class="flex flex-col bg-white dark:bg-[#0d0d0d] overflow-hidden">
+
+          <!-- Pane header -->
+          <div class="shrink-0 px-4 py-2.5 border-b border-black/[0.05] dark:border-white/[0.05] flex items-center gap-2 bg-g50/60 dark:bg-[#141414]/60">
+            <span class="text-[13px] font-semibold">GrainMarket form</span>
+            <span class="font-mono text-[11px] text-g400"
+                  x-text="`${filledGmCount} / ${totalGmItems} filled`"></span>
             <div class="relative ml-auto">
-              <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-              <input x-model="gmQuery" type="text" placeholder="Filter GM items…"
-                     class="bg-ink-850 border border-ink-700 rounded-md pl-8 pr-3 py-1.5 text-sm w-56
-                            focus:outline-none focus:border-wheat-500/60 focus:ring-1 focus:ring-wheat-500/30
-                            placeholder:text-ink-500 font-mono">
+              <svg class="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-g400 pointer-events-none"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+              <input x-model="gmQuery" type="text" placeholder="Search GM…"
+                     class="bg-white dark:bg-[#1a1a1a] border border-black/[0.08] dark:border-white/[0.08] rounded-full pl-7 pr-3 py-1 text-[12px] w-32
+                            focus:outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/20
+                            placeholder:text-g400 font-mono">
             </div>
           </div>
 
           <!-- Sheet tabs -->
-          <div class="shrink-0 flex items-center gap-1 px-4 py-2 border-b border-ink-800 overflow-x-auto no-scrollbar">
+          <div class="shrink-0 flex items-center gap-0 px-1 border-b border-black/[0.05] dark:border-white/[0.05] overflow-x-auto no-scrollbar bg-white dark:bg-[#0d0d0d]">
             <template x-for="sheet in gmSheets" :key="sheet.sheet">
               <button @click="activeSheet = sheet.sheet"
-                      :class="[
-                        'sheet-tab whitespace-nowrap',
-                        activeSheet === sheet.sheet ? 'sheet-tab-active' : ''
-                      ]">
+                      :class="activeSheet === sheet.sheet
+                        ? 'border-b-2 border-brand text-near dark:text-[#ededed]'
+                        : 'border-b-2 border-transparent text-g400 hover:text-g700 dark:hover:text-[#ededed]'"
+                      class="flex items-center gap-1 px-3 py-2 text-[11px] font-medium whitespace-nowrap transition-colors font-mono uppercase tracking-[0.4px]">
                 <span x-text="sheet.sheet"></span>
-                <span class="font-mono text-[10px] text-ink-500 ml-1.5"
-                      x-text="sheetFilledCount(sheet.sheet) + '/' + sheet.items.length"></span>
+                <span class="opacity-40 text-[10px]"
+                      x-text="sheetFilledCount(sheet.sheet)+'/'+sheet.items.length"></span>
               </button>
             </template>
           </div>
 
+          <!-- GM rows -->
           <div class="flex-1 overflow-y-auto" id="gm-scroll">
             <template x-if="activeSheetData">
-              <div class="p-4">
-                <div class="sticky top-0 bg-ink-950/90 backdrop-blur z-10 flex items-center gap-4 px-3 py-2 border-b border-ink-800 text-[10px] font-mono uppercase tracking-wider text-ink-500">
-                  <div class="w-12">ITEM</div>
-                  <div class="flex-1">DESCRIPTION</div>
-                  <div class="w-16 text-right">PRICE</div>
-                  <div class="w-20 text-right">ORDER</div>
+              <div>
+                <!-- Column headers -->
+                <div class="sticky top-0 z-10 flex items-center gap-3 px-5 py-2 border-b border-black/[0.04] dark:border-white/[0.04]
+                            bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur
+                            font-mono text-[10px] uppercase tracking-[0.6px] text-g400">
+                  <div class="w-12">Item</div>
+                  <div class="flex-1">Description</div>
+                  <div class="w-16 text-right">Price</div>
+                  <div class="w-20 text-right">Order</div>
                 </div>
 
-                <template x-for="item in filteredGmItems" :key="item.item_no + '::' + activeSheet">
-                  <div :id="'gm-' + item.item_no + '-' + activeSheet"
+                <template x-for="item in filteredGmItems" :key="item.item_no+'::'+activeSheet">
+                  <div :id="'gm-'+item.item_no+'-'+activeSheet"
                        @click="focusGmItem(item)"
                        :class="[
-                         'gm-row group',
-                         gmWrites[gmKey(item)] ? 'gm-row-filled' : '',
-                         selectedGmKey === gmKey(item) ? 'gm-row-selected' : ''
+                         'flex items-center gap-3 px-5 py-2.5 border-b border-black/[0.03] dark:border-white/[0.03] cursor-pointer transition-colors',
+                         gmWrites[gmKey(item)]
+                           ? 'bg-brand-lt/18 dark:bg-brand/5 hover:bg-brand-lt/28'
+                           : 'hover:bg-g50 dark:hover:bg-[#141414]',
+                         selectedGmKey === gmKey(item)
+                           ? '!bg-brand-lt/30 dark:!bg-brand/8 shadow-[inset_3px_0_0_#18E299]'
+                           : ''
                        ]">
-                    <div class="w-12 font-mono text-sm"
-                         :class="gmWrites[gmKey(item)] ? 'text-wheat-500' : 'text-ink-400'"
-                         x-text="'#' + item.item_no"></div>
+                    <div class="w-12 font-mono text-[11px]"
+                         :class="gmWrites[gmKey(item)] ? 'text-brand-dk dark:text-brand' : 'text-g400'"
+                         x-text="'#'+item.item_no"></div>
                     <div class="flex-1 min-w-0">
-                      <p class="truncate" x-text="item.description"></p>
+                      <p class="text-[13px] truncate" x-text="item.description"></p>
                       <template x-if="gmWrites[gmKey(item)]">
-                        <p class="text-[11px] font-mono text-ink-400 mt-0.5 truncate">
-                          ← line #<span x-text="String(gmWrites[gmKey(item)].row_index).padStart(3,'0')"></span>
-                          <span class="mx-1">·</span>
-                          <span x-text="gmWrites[gmKey(item)].onestop_desc"></span>
+                        <p class="font-mono text-[10px] text-g400 mt-0.5 truncate">
+                          ← #<span x-text="String(gmWrites[gmKey(item)].row_index).padStart(3,'0')"></span>
+                          · <span x-text="gmWrites[gmKey(item)].onestop_desc"></span>
                         </p>
                       </template>
                     </div>
-                    <div class="w-16 text-right font-mono text-[11px] text-ink-400"
-                         x-text="item.price !== null && item.price !== undefined ? '$'+Number(item.price).toFixed(2) : '—'"></div>
+                    <div class="w-16 text-right font-mono text-[11px] text-g400"
+                         x-text="item.price!=null ? '$'+Number(item.price).toFixed(2) : '—'"></div>
                     <div class="w-20 text-right">
                       <template x-if="gmWrites[gmKey(item)]">
-                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-wheat-500/15 text-wheat-500 font-mono text-sm">
-                          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.2 6.6.4-5 4.4 1.5 6.6L12 16.2 6.5 19.6 8 13l-5-4.4 6.6-.4z"/></svg>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-brand-lt dark:bg-brand/20 text-brand-dk dark:text-brand font-mono text-[12px] font-semibold">
                           <span x-text="gmWrites[gmKey(item)].qty"></span>
                         </span>
                       </template>
                       <template x-if="!gmWrites[gmKey(item)]">
-                        <span class="font-mono text-sm text-ink-600">—</span>
+                        <span class="font-mono text-[12px] text-g200 dark:text-white/10">—</span>
                       </template>
                     </div>
                   </div>
                 </template>
 
                 <template x-if="filteredGmItems.length === 0">
-                  <p class="text-center text-ink-400 italic py-12">No items on this sheet match your filter.</p>
+                  <p class="text-center text-g400 py-16 text-[14px]">No items match.</p>
                 </template>
               </div>
             </template>
-
             <template x-if="gmSheets.length === 0">
-              <div class="flex items-center justify-center h-full text-ink-400 italic">
-                GM catalog loading…
-              </div>
+              <div class="flex items-center justify-center h-full text-g400 text-[14px]">GM catalog loading…</div>
             </template>
           </div>
         </div>
@@ -631,30 +599,26 @@
     </section>
   </template>
 
-  <!-- ═══════════════ FRESHBOOKS TAB ═══════════════ -->
+  <!-- ═══ FRESHBOOKS TAB ═══ -->
   <template x-if="currentTab === 'freshbooks'">
-    <section class="relative z-10 px-6 pt-10 pb-20 max-w-[1200px] mx-auto animate-fade-up">
+    <section class="relative px-6 pt-12 pb-20 max-w-[960px] mx-auto animate-fade-up">
 
-      <!-- Header -->
-      <div class="mb-8">
-        <p class="text-[11px] font-mono uppercase tracking-[0.3em] text-ink-400 mb-3">
-          <span class="inline-block w-1.5 h-1.5 bg-wheat-500 rounded-full align-middle mr-2"></span>
-          FreshBooks · Invoice from PDF
-        </p>
-        <h2 class="font-display text-[clamp(2rem,4vw,3.5rem)] leading-[0.95] tracking-tightest font-light">
-          Upload an <span class="italic text-wheat-500">OSD order PDF</span>
-          <br>to create a <span class="italic text-wheat-500">FreshBooks invoice</span>.
+      <div class="mb-10">
+        <p class="font-mono text-[11px] uppercase tracking-[0.65px] text-g400 mb-3">FreshBooks · Invoice from PDF</p>
+        <h2 class="text-[clamp(2rem,4vw,3rem)] font-semibold leading-[1.10] tracking-[-0.8px] mb-3">
+          Upload an OSD order PDF,<br>
+          <span class="text-brand-dk dark:text-brand">create a FreshBooks invoice</span>.
         </h2>
       </div>
 
-      <!-- Connection status bar -->
-      <div class="mb-6 rounded-xl border px-5 py-4 flex items-center gap-4"
+      <!-- Connection status -->
+      <div class="mb-6 rounded-2xl border px-5 py-4 flex items-center gap-4"
            :class="fbConnected
-             ? 'border-jade-500/30 bg-jade-500/[0.05]'
-             : 'border-ink-700 bg-ink-900/60'">
-        <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-             :class="fbConnected ? 'bg-jade-500/20' : 'bg-ink-800'">
-          <svg class="w-4 h-4" :class="fbConnected ? 'text-jade-500' : 'text-ink-400'"
+             ? 'border-brand/20 bg-brand-lt/15 dark:bg-brand/5'
+             : 'border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-[#141414]'">
+        <div class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
+             :class="fbConnected ? 'bg-brand-lt dark:bg-brand/20' : 'bg-g100 dark:bg-[#1a1a1a]'">
+          <svg class="w-4 h-4" :class="fbConnected ? 'text-brand-dk dark:text-brand' : 'text-g400'"
                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
           </svg>
@@ -662,119 +626,106 @@
         <div class="flex-1">
           <template x-if="fbConnected">
             <div>
-              <p class="text-sm font-medium text-jade-500">Connected to FreshBooks</p>
-              <p class="text-[11px] font-mono text-ink-400 mt-0.5">
-                Account <span x-text="fbAccountId"></span>
-              </p>
+              <p class="text-[15px] font-medium text-brand-dk dark:text-brand">Connected to FreshBooks</p>
+              <p class="font-mono text-[11px] text-g400 mt-0.5">Account <span x-text="fbAccountId"></span></p>
             </div>
           </template>
           <template x-if="!fbConnected">
             <div>
-              <p class="text-sm font-medium text-ink-200">FreshBooks not connected</p>
-              <p class="text-[11px] text-ink-400 mt-0.5">Connect your account to create invoices.</p>
+              <p class="text-[15px] font-medium">FreshBooks not connected</p>
+              <p class="text-[13px] text-g500 mt-0.5">Connect your account to create invoices.</p>
             </div>
           </template>
         </div>
         <template x-if="!fbConnected">
-          <a href="/api/freshbooks/connect"
-             class="btn-primary shrink-0">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          <a href="/api/freshbooks/connect" class="btn-primary shrink-0 text-[13px]">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             Connect FreshBooks
           </a>
         </template>
         <template x-if="fbConnected">
-          <button @click="fbDisconnect()" class="btn-ghost text-ink-400 shrink-0 text-sm">
-            Disconnect
-          </button>
+          <button @click="fbDisconnect()" class="btn-ghost text-g400 text-[13px] shrink-0">Disconnect</button>
         </template>
       </div>
 
-      <!-- Upload + metadata row -->
-      <div class="grid lg:grid-cols-[1.4fr_1fr] gap-6 mb-6">
+      <!-- Upload + metadata -->
+      <div class="grid lg:grid-cols-[1.4fr_1fr] gap-5 mb-6">
 
-        <!-- PDF drop zone -->
         <label for="fb-pdf-file"
                @dragover.prevent="fbDragActive = true"
                @dragleave.prevent="fbDragActive = false"
                @drop.prevent="fbHandleDrop($event)"
                :class="fbDragActive
-                       ? 'border-wheat-500 bg-wheat-500/5 shadow-glow-wheat'
-                       : fbParsed
-                         ? 'border-jade-500/50 bg-jade-500/[0.03]'
-                         : 'border-ink-700 hover:border-wheat-500/50 hover:bg-ink-850/60'"
-               class="relative block cursor-pointer rounded-2xl border border-dashed
-                      transition-all duration-300 p-8 overflow-hidden group">
-          <div class="absolute top-0 right-0 text-[10px] font-mono tracking-widest uppercase
-                      text-ink-500 px-4 py-2">01 · INGEST</div>
-          <div class="flex items-start gap-5">
-            <div class="relative shrink-0 w-14 h-14 rounded-xl bg-ink-850 border border-ink-700
-                        flex items-center justify-center group-hover:border-wheat-500/60 transition-colors">
-              <svg class="w-6 h-6" :class="fbParsed ? 'text-jade-500' : 'text-wheat-500'"
+                 ? 'border-brand bg-brand-lt/20 shadow-[0_0_0_3px_rgba(24,226,153,0.12)]'
+                 : fbParsed
+                 ? 'border-brand/30 bg-brand-lt/10 dark:bg-brand/5'
+                 : 'border-black/[0.08] dark:border-white/[0.08] hover:border-brand/40'"
+               class="relative block cursor-pointer rounded-2xl border-2 border-dashed
+                      bg-white dark:bg-[#141414] transition-all duration-200 p-8">
+          <div class="flex flex-col items-center text-center">
+            <div class="w-12 h-12 rounded-2xl mb-4 flex items-center justify-center"
+                 :class="fbParsed ? 'bg-brand-lt dark:bg-brand/20' : 'bg-g100 dark:bg-[#1a1a1a]'">
+              <svg class="w-6 h-6" :class="fbParsed ? 'text-brand-dk dark:text-brand' : 'text-g400'"
                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                 <template x-if="!fbParsed">
                   <g><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></g>
                 </template>
-                <template x-if="fbParsed">
-                  <path d="M20 6 9 17l-5-5"/>
-                </template>
+                <template x-if="fbParsed"><path d="M20 6 9 17l-5-5"/></template>
               </svg>
             </div>
-            <div class="flex-1 min-w-0">
-              <template x-if="!fbParsed && !fbParsing">
-                <div>
-                  <h3 class="font-display text-xl leading-tight">Drop an OSD Sales Order PDF</h3>
-                  <p class="mt-1 text-sm text-ink-300">
-                    or <span class="text-wheat-500 underline underline-offset-4">click to browse</span> ·
-                    <span class="font-mono text-xs text-ink-400">.pdf only</span>
-                  </p>
-                </div>
-              </template>
-              <template x-if="fbParsing">
-                <div>
-                  <h3 class="font-display text-xl leading-tight text-wheat-500">Parsing PDF…</h3>
-                  <p class="mt-1 text-sm text-ink-300">Extracting line items from all pages.</p>
-                </div>
-              </template>
-              <template x-if="fbParsed && !fbParsing">
-                <div>
-                  <h3 class="font-display text-xl leading-tight text-jade-500"
-                      x-text="fbFileName"></h3>
-                  <p class="mt-1 text-sm text-ink-300">
-                    <span class="font-mono text-jade-500" x-text="fbParsed.items.length"></span> items parsed ·
-                    <button @click.prevent="fbReset()" class="text-ink-400 hover:text-wheat-500 underline underline-offset-4">upload different file</button>
-                  </p>
-                </div>
-              </template>
-            </div>
+            <template x-if="!fbParsed && !fbParsing">
+              <div>
+                <h3 class="text-[17px] font-semibold tracking-[-0.2px] mb-1">Drop an OSD Sales Order PDF</h3>
+                <p class="text-[14px] text-g500">
+                  or <span class="text-brand-dk dark:text-brand underline underline-offset-4">click to browse</span>
+                  <span class="font-mono text-[11px] text-g400 ml-1">.pdf only</span>
+                </p>
+              </div>
+            </template>
+            <template x-if="fbParsing">
+              <div>
+                <h3 class="text-[17px] font-semibold tracking-[-0.2px] text-brand-dk dark:text-brand mb-1">Parsing PDF…</h3>
+                <p class="text-[14px] text-g500">Extracting line items from all pages.</p>
+              </div>
+            </template>
+            <template x-if="fbParsed && !fbParsing">
+              <div>
+                <h3 class="text-[17px] font-semibold tracking-[-0.2px] text-brand-dk dark:text-brand mb-1" x-text="fbFileName"></h3>
+                <p class="text-[14px] text-g500">
+                  <span class="font-mono text-brand-dk dark:text-brand" x-text="fbParsed.items.length"></span> items parsed ·
+                  <button @click.prevent="fbReset()" class="text-g400 hover:text-near dark:hover:text-[#ededed] underline underline-offset-4">upload different file</button>
+                </p>
+              </div>
+            </template>
           </div>
-          <input type="file" id="fb-pdf-file" accept=".pdf" class="sr-only"
-                 @change="fbHandleFileInput($event)">
+          <input type="file" id="fb-pdf-file" accept=".pdf" class="sr-only" @change="fbHandleFileInput($event)">
         </label>
 
-        <!-- Order metadata card -->
-        <div class="rounded-2xl border border-ink-800 bg-ink-900/60 p-6 flex flex-col justify-center">
+        <!-- Metadata card -->
+        <div class="rounded-2xl border border-black/[0.05] dark:border-white/[0.08]
+                    bg-white dark:bg-[#141414] shadow-[rgba(0,0,0,0.03)_0px_2px_4px] p-6 flex flex-col justify-center">
           <template x-if="!fbParsed">
-            <div class="text-ink-400 italic text-sm text-center">Upload a PDF to see order details</div>
+            <p class="text-[14px] text-g400 text-center">Upload a PDF to see order details</p>
           </template>
           <template x-if="fbParsed">
             <div class="space-y-4">
               <div>
-                <p class="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-400">Order Number</p>
-                <p class="font-display text-3xl mt-1"
-                   x-text="fbParsed.order_number ? '#' + fbParsed.order_number : '—'"></p>
+                <p class="font-mono text-[11px] uppercase tracking-[0.65px] text-g400 mb-1">Order Number</p>
+                <p class="text-[26px] font-semibold tracking-[-0.5px]"
+                   x-text="fbParsed.order_number ? '#'+fbParsed.order_number : '—'"></p>
               </div>
               <div>
-                <p class="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-400">Order Date</p>
-                <p class="font-mono text-lg mt-1 text-ink-200" x-text="fbParsed.order_date || '—'"></p>
+                <p class="font-mono text-[11px] uppercase tracking-[0.65px] text-g400 mb-1">Order Date</p>
+                <p class="font-mono text-[15px] text-g500" x-text="fbParsed.order_date || '—'"></p>
               </div>
-              <div class="pt-2 border-t border-ink-800">
-                <p class="text-[10px] font-mono uppercase tracking-[0.25em] text-ink-400">Line Items</p>
-                <div class="flex items-center gap-3 mt-1">
-                  <span class="font-mono text-2xl text-ink-100" x-text="fbParsed.items.length"></span>
+              <div class="pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+                <p class="font-mono text-[11px] uppercase tracking-[0.65px] text-g400 mb-1">Line Items</p>
+                <div class="flex items-center gap-3">
+                  <span class="font-mono text-[22px] font-semibold" x-text="fbParsed.items.length"></span>
                   <template x-if="fbParsed.warnings && fbParsed.warnings.length">
-                    <span class="text-[11px] font-mono text-saffron-500 flex items-center gap-1">
-                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.3L2 19h20L13.7 3.3a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                      <span x-text="fbParsed.warnings.length + ' warning(s)'"></span>
+                    <span class="font-mono text-[11px] text-ob_amber flex items-center gap-1">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.3L2 19h20L13.7 3.3a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                      <span x-text="fbParsed.warnings.length+' warning(s)'"></span>
                     </span>
                   </template>
                 </div>
@@ -784,198 +735,186 @@
         </div>
       </div>
 
-      <!-- Warnings banner -->
+      <!-- Warnings -->
       <template x-if="fbParsed && fbParsed.warnings && fbParsed.warnings.length">
-        <div class="mb-4 p-4 rounded-xl border border-saffron-500/30 bg-saffron-500/[0.06]">
-          <p class="text-[11px] font-mono uppercase tracking-wider text-saffron-500 mb-2">Parse warnings</p>
+        <div class="mb-5 p-4 rounded-2xl border border-ob_amber/20 bg-ob_amber/5">
+          <p class="font-mono text-[11px] uppercase tracking-[0.6px] text-ob_amber mb-2">Parse warnings</p>
           <template x-for="w in fbParsed.warnings" :key="w">
-            <p class="text-sm text-ink-300 font-mono" x-text="w"></p>
+            <p class="font-mono text-[12px] text-g500" x-text="w"></p>
           </template>
         </div>
       </template>
 
       <!-- Review table -->
       <template x-if="fbParsed && fbParsed.items.length">
-        <div class="rounded-2xl border border-ink-800 bg-ink-900/40 overflow-hidden mb-6">
-          <div class="absolute top-0 right-0"></div>
-
-          <!-- Table header -->
-          <div class="px-5 py-3 border-b border-ink-800 bg-ink-900/60 flex items-center gap-4
-                      text-[10px] font-mono uppercase tracking-wider text-ink-500">
-            <div class="w-20">Item</div>
+        <div class="rounded-2xl border border-black/[0.05] dark:border-white/[0.08]
+                    bg-white dark:bg-[#141414] overflow-hidden mb-5 shadow-[rgba(0,0,0,0.03)_0px_2px_4px]">
+          <div class="px-5 py-2.5 border-b border-black/[0.05] dark:border-white/[0.05] flex items-center
+                      font-mono text-[10px] uppercase tracking-[0.6px] text-g400 bg-g50/50 dark:bg-[#0d0d0d]/50">
+            <div style="width:5.5rem">Item</div>
             <div class="flex-1">Description</div>
-            <div class="w-16 text-right">Unit</div>
-            <div class="w-20 text-right">Qty</div>
-            <div class="w-24 text-right">Unit Price</div>
-            <div class="w-24 text-right">Amount</div>
+            <div style="width:3.5rem" class="text-right">Unit</div>
+            <div style="width:3.5rem" class="text-right">Qty</div>
+            <div style="width:5.5rem" class="text-right">Unit Price</div>
+            <div style="width:5rem"   class="text-right">Amount</div>
           </div>
 
-          <!-- Rows -->
-          <div class="divide-y divide-ink-800/60 max-h-[480px] overflow-y-auto scroll-container">
-            <template x-for="(item, idx) in fbParsed.items" :key="item.item_code + idx">
-              <div class="flex items-center gap-4 px-5 py-3 group hover:bg-ink-850/40 transition-colors"
-                   :class="item.warning ? 'bg-saffron-500/[0.03]' : ''">
-                <div class="w-20 font-mono text-[11px] text-ink-400" x-text="item.item_code"></div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm truncate" x-text="item.description"></p>
+          <div class="divide-y divide-black/[0.03] dark:divide-white/[0.03] max-h-[380px] overflow-y-auto scroll-container">
+            <template x-for="(item, idx) in fbParsed.items" :key="item.item_code+idx">
+              <div class="flex items-center px-5 py-2.5 hover:bg-g50 dark:hover:bg-[#1a1a1a] transition-colors"
+                   :class="item.warning ? 'bg-ob_amber/[0.02]' : ''">
+                <div style="width:5.5rem" class="font-mono text-[11px] text-g400 shrink-0" x-text="item.item_code"></div>
+                <div class="flex-1 min-w-0 pr-3">
+                  <p class="text-[13px] truncate" x-text="item.description"></p>
                   <template x-if="item.warning">
-                    <p class="text-[11px] font-mono text-saffron-500 mt-0.5" x-text="'⚠ ' + item.warning"></p>
+                    <p class="font-mono text-[10px] text-ob_amber mt-0.5" x-text="'⚠ '+item.warning"></p>
                   </template>
                 </div>
-                <div class="w-16 text-right font-mono text-[11px] text-ink-400" x-text="item.unit"></div>
-                <!-- Editable qty -->
-                <div class="w-20 text-right">
-                  <input type="number" min="0" step="0.5"
-                         :value="item.qty"
-                         @change="item.qty = parseFloat($event.target.value) || 0; item.amount = Math.round(item.qty * item.unit_price * 100) / 100"
-                         class="w-full text-right bg-transparent border-b border-ink-700
-                                focus:border-wheat-500 text-ink-100 font-mono text-sm px-1 focus:outline-none">
+                <div style="width:3.5rem" class="shrink-0 text-right font-mono text-[11px] text-g400" x-text="item.unit"></div>
+                <div style="width:3.5rem" class="shrink-0 text-right pl-1">
+                  <input type="number" min="0" step="0.5" :value="item.qty"
+                         @change="item.qty=parseFloat($event.target.value)||0; item.amount=Math.round(item.qty*item.unit_price*100)/100"
+                         class="w-full text-right bg-transparent border-b border-black/[0.08] dark:border-white/[0.08]
+                                focus:border-brand text-near dark:text-[#ededed] font-mono text-[12px] px-1 focus:outline-none">
                 </div>
-                <!-- Editable unit price -->
-                <div class="w-24 text-right">
-                  <input type="number" min="0" step="0.01"
-                         :value="item.unit_price.toFixed(2)"
-                         @change="item.unit_price = parseFloat($event.target.value) || 0; item.amount = Math.round(item.qty * item.unit_price * 100) / 100"
-                         class="w-full text-right bg-transparent border-b border-ink-700
-                                focus:border-wheat-500 text-ink-100 font-mono text-sm px-1 focus:outline-none">
+                <div style="width:5.5rem" class="shrink-0 text-right pl-1">
+                  <input type="number" min="0" step="0.01" :value="item.unit_price.toFixed(2)"
+                         @change="item.unit_price=parseFloat($event.target.value)||0; item.amount=Math.round(item.qty*item.unit_price*100)/100"
+                         class="w-full text-right bg-transparent border-b border-black/[0.08] dark:border-white/[0.08]
+                                focus:border-brand text-near dark:text-[#ededed] font-mono text-[12px] px-1 focus:outline-none">
                 </div>
-                <div class="w-24 text-right font-mono text-sm text-ink-300"
-                     x-text="'$' + item.amount.toFixed(2)"></div>
+                <div style="width:5rem" class="shrink-0 text-right font-mono text-[12px] text-g500"
+                     x-text="'$'+item.amount.toFixed(2)"></div>
               </div>
             </template>
           </div>
 
-          <!-- Footer total -->
-          <div class="px-5 py-3 border-t border-ink-800 bg-ink-900/60 flex items-center justify-end gap-4
-                      text-[11px] font-mono uppercase tracking-wider">
-            <span class="text-ink-400">Total</span>
-            <span class="text-wheat-500 text-base"
-                  x-text="'$' + fbParsed.items.reduce((s, i) => s + i.amount, 0).toFixed(2)"></span>
+          <div class="px-5 py-3 border-t border-black/[0.05] dark:border-white/[0.05] flex items-center justify-end gap-4
+                      font-mono bg-g50/50 dark:bg-[#0d0d0d]/50">
+            <span class="text-[11px] uppercase tracking-[0.6px] text-g400">Total</span>
+            <span class="text-[18px] font-semibold"
+                  x-text="'$'+fbParsed.items.reduce((s,i)=>s+i.amount,0).toFixed(2)"></span>
           </div>
         </div>
       </template>
 
-      <!-- Action row -->
+      <!-- Actions -->
       <template x-if="fbParsed && fbParsed.items.length">
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
           <button @click="fbCreateInvoice()"
                   :disabled="fbInvoicing || !!fbInvoiceResult || !fbConnected"
-                  :class="(fbInvoicing || fbInvoiceResult || !fbConnected) ? 'opacity-60 cursor-not-allowed' : ''"
+                  :class="(fbInvoicing||fbInvoiceResult||!fbConnected) ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'"
                   :title="!fbConnected ? 'Connect FreshBooks first' : ''"
-                  class="btn-primary">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  :style="theme==='dark'
+                    ? 'display:inline-flex;align-items:center;gap:6px;padding:8px 20px;background:#ededed;color:#0d0d0d;font-size:14px;font-weight:500;border-radius:9999px;border:none;cursor:pointer;white-space:nowrap;transition:opacity 0.15s;'
+                    : 'display:inline-flex;align-items:center;gap:6px;padding:8px 20px;background:#0d0d0d;color:#ffffff;font-size:14px;font-weight:500;border-radius:9999px;border:none;cursor:pointer;box-shadow:rgba(0,0,0,0.06) 0px 1px 2px;white-space:nowrap;transition:opacity 0.15s;'">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
             </svg>
             <span x-text="fbInvoicing ? 'Creating invoice…' : 'Create FreshBooks Invoice'"></span>
           </button>
-          <button @click="fbReset()" class="btn-ghost text-ink-400">Reset</button>
-          <span class="ml-auto text-[11px] font-mono text-ink-400">
-            <span x-text="fbParsed.items.length"></span> items ·
-            customer #<span x-text="fbCustomerId"></span>
+          <button @click="fbReset()"
+                  :style="theme==='dark'
+                    ? 'display:inline-flex;align-items:center;gap:6px;padding:6px 16px;background:transparent;color:#a0a0a0;font-size:14px;font-weight:500;border-radius:9999px;border:1px solid rgba(255,255,255,0.08);cursor:pointer;transition:opacity 0.15s;'
+                    : 'display:inline-flex;align-items:center;gap:6px;padding:6px 16px;background:#ffffff;color:#888888;font-size:14px;font-weight:500;border-radius:9999px;border:1px solid rgba(0,0,0,0.08);cursor:pointer;transition:opacity 0.15s;'">Reset</button>
+          <span class="ml-auto font-mono text-[11px] text-g400">
+            <span x-text="fbParsed.items.length"></span> items · customer #<span x-text="fbCustomerId"></span>
           </span>
         </div>
       </template>
 
-      <!-- Success banner -->
+      <!-- Success -->
       <template x-if="fbInvoiceResult">
-        <div class="mt-6 p-5 rounded-2xl border border-jade-500/30 bg-jade-500/[0.06] flex items-center gap-5 animate-fade-up">
-          <div class="shrink-0 w-10 h-10 rounded-full bg-jade-500/20 flex items-center justify-center">
-            <svg class="w-5 h-5 text-jade-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+        <div class="mt-6 p-5 rounded-2xl border border-brand/20 bg-brand-lt/20 dark:bg-brand/5 flex items-center gap-5 animate-fade-up">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-brand-lt dark:bg-brand/20 flex items-center justify-center">
+            <svg class="w-5 h-5 text-brand-dk dark:text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
           </div>
           <div class="flex-1">
-            <p class="font-display text-xl text-jade-500">Invoice created!</p>
-            <p class="text-sm text-ink-300 mt-1">
-              Invoice <span class="font-mono text-ink-100" x-text="'#' + fbInvoiceResult.invoice_number"></span>
-              · status <span class="font-mono text-ink-100" x-text="fbInvoiceResult.status"></span>
+            <p class="text-[17px] font-semibold text-brand-dk dark:text-brand">Invoice created!</p>
+            <p class="text-[14px] text-g500 mt-0.5">
+              Invoice <span class="font-mono" x-text="'#'+fbInvoiceResult.invoice_number"></span>
+              · status <span class="font-mono" x-text="fbInvoiceResult.status"></span>
             </p>
           </div>
           <template x-if="fbInvoiceResult.freshbooks_url">
-            <a :href="fbInvoiceResult.freshbooks_url" target="_blank" class="btn-primary shrink-0">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <a :href="fbInvoiceResult.freshbooks_url" target="_blank" class="btn-primary shrink-0 text-[13px]">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Open in FreshBooks
             </a>
           </template>
         </div>
       </template>
-
     </section>
   </template>
 
-  <!-- ═══════════════ REFRESH CATALOGS MODAL ═══════════════ -->
+  <!-- ═══ REFRESH MODAL ═══ -->
   <div x-show="refreshModalOpen" x-transition.opacity
-       class="fixed inset-0 z-50 bg-ink-950/80 backdrop-blur-sm flex items-center justify-center p-6"
+       class="fixed inset-0 z-50 bg-black/25 dark:bg-black/55 backdrop-blur-sm flex items-center justify-center p-6"
        @click.self="refreshModalOpen = false">
-    <div class="relative max-w-2xl w-full rounded-2xl border border-ink-700 bg-ink-900 shadow-2xl animate-fade-up"
-         x-trap.noscroll="refreshModalOpen">
+    <div class="relative max-w-lg w-full rounded-2xl border border-black/[0.08] dark:border-white/[0.08]
+                bg-white dark:bg-[#141414] shadow-[rgba(0,0,0,0.12)_0px_8px_40px] animate-fade-up">
       <div class="p-8">
         <div class="flex items-start justify-between gap-4 mb-6">
           <div>
-            <p class="text-[10px] font-mono uppercase tracking-[0.25em] text-wheat-500">Weekly</p>
-            <h3 class="font-display text-3xl tracking-tight mt-1">Refresh catalogs</h3>
-            <p class="text-sm text-ink-300 mt-2">
-              Upload this week's blank OneStop and GrainMarket templates. OrderBridge will index both
-              and surface items that changed.
-            </p>
+            <p class="font-mono text-[11px] uppercase tracking-[0.65px] text-brand-dk dark:text-brand mb-1">Weekly</p>
+            <h3 class="text-[22px] font-semibold tracking-[-0.4px]">Refresh catalogs</h3>
+            <p class="text-[14px] text-g500 mt-1.5">Upload this week's blank OneStop and GrainMarket templates.</p>
           </div>
-          <button @click="refreshModalOpen = false" class="text-ink-400 hover:text-ink-100 text-2xl leading-none">×</button>
+          <button @click="refreshModalOpen = false" class="text-g400 hover:text-near dark:hover:text-[#ededed] text-2xl leading-none mt-1">×</button>
         </div>
 
-        <form @submit.prevent="submitRefresh()" class="space-y-4">
+        <form @submit.prevent="submitRefresh()" class="space-y-3">
           <label class="catalog-upload">
             <div class="flex-1">
-              <p class="text-[11px] font-mono uppercase tracking-wider text-ink-400">OneStop template</p>
-              <p class="text-sm" x-text="onestopFile ? onestopFile.name : 'Choose .xlsx …'"
-                 :class="onestopFile ? 'text-ink-100' : 'text-ink-400 italic'"></p>
+              <p class="font-mono text-[11px] uppercase tracking-[0.6px] text-g400">OneStop template</p>
+              <p class="text-[14px] mt-0.5" x-text="onestopFile ? onestopFile.name : 'Choose .xlsx …'"
+                 :class="onestopFile ? '' : 'text-g400'"></p>
             </div>
-            <span class="text-wheat-500 text-sm">browse</span>
-            <input type="file" accept=".xlsx" class="sr-only"
-                   @change="onestopFile = $event.target.files[0]">
+            <span class="text-brand-dk dark:text-brand text-[14px] font-medium shrink-0">browse</span>
+            <input type="file" accept=".xlsx" class="sr-only" @change="onestopFile = $event.target.files[0]">
           </label>
-
           <label class="catalog-upload">
             <div class="flex-1">
-              <p class="text-[11px] font-mono uppercase tracking-wider text-ink-400">GrainMarket template</p>
-              <p class="text-sm" x-text="gmFile ? gmFile.name : 'Choose .xlsx …'"
-                 :class="gmFile ? 'text-ink-100' : 'text-ink-400 italic'"></p>
+              <p class="font-mono text-[11px] uppercase tracking-[0.6px] text-g400">GrainMarket template</p>
+              <p class="text-[14px] mt-0.5" x-text="gmFile ? gmFile.name : 'Choose .xlsx …'"
+                 :class="gmFile ? '' : 'text-g400'"></p>
             </div>
-            <span class="text-wheat-500 text-sm">browse</span>
-            <input type="file" accept=".xlsx" class="sr-only"
-                   @change="gmFile = $event.target.files[0]">
+            <span class="text-brand-dk dark:text-brand text-[14px] font-medium shrink-0">browse</span>
+            <input type="file" accept=".xlsx" class="sr-only" @change="gmFile = $event.target.files[0]">
           </label>
-
           <div class="flex items-center gap-3 pt-2">
-            <button type="submit" class="btn-primary" :disabled="!onestopFile || !gmFile || refreshing"
-                    :class="(!onestopFile || !gmFile || refreshing) ? 'opacity-50 cursor-not-allowed' : ''">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v5h5"/><path d="M20.5 12A8.5 8.5 0 1 1 6 6.5L3 9"/></svg>
+            <button type="submit" class="btn-primary" :disabled="!onestopFile||!gmFile||refreshing"
+                    :class="(!onestopFile||!gmFile||refreshing) ? 'opacity-50 cursor-not-allowed' : ''">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M20.5 12A8.5 8.5 0 1 1 6 6.5L3 9"/></svg>
               <span x-text="refreshing ? 'Indexing…' : 'Upload & diff'"></span>
             </button>
             <button type="button" @click="refreshModalOpen = false" class="btn-ghost">Cancel</button>
-            <span x-show="refreshStatus" class="ml-auto text-sm text-ink-300 font-mono" x-text="refreshStatus"></span>
+            <span x-show="refreshStatus" class="ml-auto font-mono text-[12px] text-g500" x-text="refreshStatus"></span>
           </div>
         </form>
 
         <template x-if="diff">
-          <div class="mt-8 pt-6 border-t border-ink-800">
-            <h4 class="font-display text-lg mb-4">Diff since last catalog</h4>
+          <div class="mt-6 pt-6 border-t border-black/[0.05] dark:border-white/[0.05]">
+            <h4 class="text-[15px] font-semibold tracking-[-0.2px] mb-4">Diff since last catalog</h4>
             <div class="grid grid-cols-3 gap-3">
               <div class="diff-card">
-                <p class="text-[10px] font-mono uppercase tracking-wider text-jade-500">new onestop</p>
-                <p class="font-mono text-3xl mt-1" x-text="diff.new_onestop.length"></p>
-                <ul class="mt-2 max-h-40 overflow-y-auto text-[11px] font-mono text-ink-300 space-y-1">
+                <p class="font-mono text-[10px] uppercase tracking-[0.6px] text-brand-dk dark:text-brand">New</p>
+                <p class="font-mono text-[26px] font-semibold mt-1" x-text="diff.new_onestop.length"></p>
+                <ul class="mt-2 max-h-28 overflow-y-auto font-mono text-[10px] text-g500 space-y-0.5">
                   <template x-for="t in diff.new_onestop" :key="t"><li x-text="t" class="truncate"></li></template>
                 </ul>
               </div>
               <div class="diff-card">
-                <p class="text-[10px] font-mono uppercase tracking-wider text-rose-500">removed</p>
-                <p class="font-mono text-3xl mt-1" x-text="diff.removed_onestop.length"></p>
-                <ul class="mt-2 max-h-40 overflow-y-auto text-[11px] font-mono text-ink-300 space-y-1">
+                <p class="font-mono text-[10px] uppercase tracking-[0.6px] text-ob_danger">Removed</p>
+                <p class="font-mono text-[26px] font-semibold mt-1" x-text="diff.removed_onestop.length"></p>
+                <ul class="mt-2 max-h-28 overflow-y-auto font-mono text-[10px] text-g500 space-y-0.5">
                   <template x-for="t in diff.removed_onestop" :key="t"><li x-text="t" class="truncate"></li></template>
                 </ul>
               </div>
               <div class="diff-card">
-                <p class="text-[10px] font-mono uppercase tracking-wider text-saffron-500">broken mappings</p>
-                <p class="font-mono text-3xl mt-1" x-text="diff.changed_gm_match.length"></p>
-                <ul class="mt-2 max-h-40 overflow-y-auto text-[11px] font-mono text-ink-300 space-y-1">
+                <p class="font-mono text-[10px] uppercase tracking-[0.6px] text-ob_amber">Broken</p>
+                <p class="font-mono text-[26px] font-semibold mt-1" x-text="diff.changed_gm_match.length"></p>
+                <ul class="mt-2 max-h-28 overflow-y-auto font-mono text-[10px] text-g500 space-y-0.5">
                   <template x-for="t in diff.changed_gm_match" :key="t"><li x-text="t" class="truncate"></li></template>
                 </ul>
               </div>
@@ -986,58 +925,61 @@
     </div>
   </div>
 
-  <!-- ═══════════════ COMMAND PALETTE / MANUAL SEARCH ═══════════════ -->
+  <!-- ═══ COMMAND PALETTE ═══ -->
   <div x-show="cmdkOpen || manualSearchRow !== null" x-transition.opacity
-       class="fixed inset-0 z-50 bg-ink-950/80 backdrop-blur-sm flex items-start justify-center pt-32 px-6"
+       class="fixed inset-0 z-50 bg-black/25 dark:bg-black/55 backdrop-blur-sm flex items-start justify-center pt-28 px-6"
        @click.self="cmdkOpen = false; manualSearchRow = null"
        @keydown.escape.window="cmdkOpen = false; manualSearchRow = null">
-    <div class="w-full max-w-xl rounded-2xl border border-ink-700 bg-ink-900 shadow-2xl animate-fade-up overflow-hidden">
-      <div class="flex items-center gap-3 px-5 py-4 border-b border-ink-800">
-        <svg class="w-4 h-4 text-ink-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <div class="w-full max-w-lg rounded-2xl border border-black/[0.08] dark:border-white/[0.08]
+                bg-white dark:bg-[#141414] shadow-[rgba(0,0,0,0.12)_0px_8px_40px] overflow-hidden animate-fade-up">
+      <div class="flex items-center gap-3 px-4 py-3.5 border-b border-black/[0.05] dark:border-white/[0.05]">
+        <svg class="w-4 h-4 text-g400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input x-ref="cmdInput" x-model="cmdQuery"
                @input.debounce.200ms="runCmdSearch()"
-               :placeholder="manualSearchRow !== null ? 'Search GrainMarket catalog…' : 'Type a command or search items…'"
-               class="flex-1 bg-transparent focus:outline-none text-[15px] placeholder:text-ink-500">
-        <span class="font-mono text-[10px] uppercase tracking-widest text-ink-500"
-              x-text="manualSearchRow !== null ? 'manual assign' : 'cmd'"></span>
+               :placeholder="manualSearchRow !== null ? 'Search GrainMarket catalog…' : 'Type a command or search…'"
+               class="flex-1 bg-transparent focus:outline-none text-[15px] placeholder:text-g400">
+        <span class="font-mono text-[10px] uppercase tracking-[0.6px] text-g400"
+              x-text="manualSearchRow !== null ? 'assign' : '⌘K'"></span>
       </div>
-      <div class="max-h-96 overflow-y-auto py-2">
+      <div class="max-h-72 overflow-y-auto py-1.5">
         <template x-if="manualSearchRow === null && cmdQuery === ''">
           <ul>
-            <li class="cmd-item" @click="cmdkOpen = false; refreshModalOpen = true">
+            <li class="cmd-item" @click="cmdkOpen=false; refreshModalOpen=true">
               <span>Refresh weekly catalogs</span><span class="cmd-kbd">R</span>
             </li>
-            <li class="cmd-item" @click="cmdkOpen = false; historyOpen = true">
+            <li class="cmd-item" @click="cmdkOpen=false; historyOpen=true">
               <span>Open run history</span><span class="cmd-kbd">H</span>
             </li>
-            <li class="cmd-item" @click="cmdkOpen = false; toggleTheme()">
+            <li class="cmd-item" @click="cmdkOpen=false; toggleTheme()">
               <span>Toggle theme</span><span class="cmd-kbd">T</span>
             </li>
-            <li class="cmd-item" @click="cmdkOpen = false; bulkAcceptAbove(0.85)" x-show="runId">
+            <li class="cmd-item" @click="cmdkOpen=false; bulkAcceptAbove(0.85)" x-show="runId">
               <span>Accept all review ≥ 85%</span>
             </li>
-            <li class="cmd-item" @click="cmdkOpen = false; applyRun()" x-show="runId">
+            <li class="cmd-item" @click="cmdkOpen=false; applyRun()" x-show="runId">
               <span>Apply & download GM form</span><span class="cmd-kbd">⌘⏎</span>
             </li>
           </ul>
         </template>
         <template x-if="cmdQuery !== ''">
           <ul>
-            <template x-for="r in cmdResults" :key="r.item_no + '::' + r.sheet">
+            <template x-for="r in cmdResults" :key="r.item_no+'::'+r.sheet">
               <li class="cmd-item" @click="applyCmdResult(r)">
                 <div class="flex-1 min-w-0">
-                  <p class="truncate"><span class="font-mono text-wheat-500" x-text="'#' + r.item_no"></span>
-                    <span class="text-ink-200 ml-2" x-text="r.description"></span></p>
-                  <p class="text-[11px] font-mono text-ink-500 uppercase tracking-wider" x-text="r.sheet"></p>
+                  <p class="truncate">
+                    <span class="font-mono text-brand-dk dark:text-brand text-[12px]" x-text="'#'+r.item_no"></span>
+                    <span class="ml-2 text-[14px]" x-text="r.description"></span>
+                  </p>
+                  <p class="font-mono text-[10px] text-g400 uppercase tracking-[0.5px]" x-text="r.sheet"></p>
                 </div>
-                <span class="font-mono text-[11px] text-ink-400" x-text="r.price ? '$'+Number(r.price).toFixed(2) : ''"></span>
+                <span class="font-mono text-[11px] text-g400 shrink-0" x-text="r.price ? '$'+Number(r.price).toFixed(2) : ''"></span>
               </li>
             </template>
-            <template x-if="cmdResults.length === 0 && cmdSearching">
-              <li class="px-5 py-3 text-sm text-ink-400 italic">Searching…</li>
+            <template x-if="cmdResults.length===0 && cmdSearching">
+              <li class="px-4 py-3 text-[14px] text-g400">Searching…</li>
             </template>
-            <template x-if="cmdResults.length === 0 && !cmdSearching">
-              <li class="px-5 py-3 text-sm text-ink-400 italic">No items match.</li>
+            <template x-if="cmdResults.length===0 && !cmdSearching">
+              <li class="px-4 py-3 text-[14px] text-g400">No items match.</li>
             </template>
           </ul>
         </template>
@@ -1045,39 +987,54 @@
     </div>
   </div>
 
-  <!-- ═══════════════ HISTORY DRAWER ═══════════════ -->
+  <!-- ═══ HISTORY DRAWER ═══ -->
   <div x-show="historyOpen" x-transition.opacity
-       class="fixed inset-0 z-50 bg-ink-950/70 backdrop-blur-sm"
+       class="fixed inset-0 z-50 bg-black/25 dark:bg-black/55 backdrop-blur-sm"
        @click.self="historyOpen = false">
-    <aside class="absolute top-0 right-0 h-full w-full max-w-md bg-ink-900 border-l border-ink-700 overflow-y-auto"
-           x-show="historyOpen" x-transition:enter="transition duration-300"
+    <aside class="absolute top-0 right-0 h-full w-full max-w-sm bg-white dark:bg-[#141414]
+                  border-l border-black/[0.08] dark:border-white/[0.08] overflow-y-auto
+                  shadow-[rgba(0,0,0,0.1)_-8px_0px_32px]"
+           x-show="historyOpen"
+           x-transition:enter="transition duration-250"
            x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
            x-transition:leave="transition duration-200"
            x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full">
-      <div class="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-ink-800 bg-ink-900/90 backdrop-blur">
-        <h3 class="font-display text-xl">Run history</h3>
-        <button @click="historyOpen = false" class="text-ink-400 hover:text-ink-100 text-2xl leading-none">×</button>
+      <div class="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-black/[0.05] dark:border-white/[0.05]
+                  bg-white/95 dark:bg-[#141414]/95 backdrop-blur">
+        <h3 class="text-[17px] font-semibold tracking-[-0.3px]">Run history</h3>
+        <button @click="historyOpen = false" class="text-g400 hover:text-near dark:hover:text-[#ededed] text-2xl leading-none">×</button>
       </div>
-      <div class="p-6 space-y-3">
+      <div class="p-5 space-y-3">
         <template x-if="runHistory.length === 0">
-          <p class="text-ink-400 italic">No runs recorded yet.</p>
+          <p class="text-[14px] text-g400">No runs recorded yet.</p>
         </template>
-        <template x-for="r in runHistory" :key="r.uploaded_at + r.filename">
-          <div class="rounded-xl border border-ink-800 bg-ink-850/60 p-4">
+        <template x-for="r in runHistory" :key="r.uploaded_at+r.filename">
+          <div class="rounded-2xl border border-black/[0.05] dark:border-white/[0.05]
+                      bg-white dark:bg-[#1a1a1a] shadow-[rgba(0,0,0,0.02)_0px_2px_4px] p-4">
             <div class="flex items-start gap-3">
               <div class="flex-1 min-w-0">
-                <p class="font-medium truncate" x-text="r.filename"></p>
-                <p class="text-[11px] font-mono text-ink-400 uppercase tracking-wider mt-1"
-                   x-text="fmtWhen(r.uploaded_at) + ' · by ' + r.uploaded_by"></p>
+                <p class="text-[14px] font-medium truncate" x-text="r.filename"></p>
+                <p class="font-mono text-[11px] text-g400 uppercase tracking-[0.5px] mt-0.5"
+                   x-text="fmtWhen(r.uploaded_at)+' · by '+r.uploaded_by"></p>
               </div>
-              <a x-show="r.download_url" :href="r.download_url" class="shrink-0 text-[11px] font-mono uppercase tracking-widest text-wheat-500 hover:text-wheat-400">
+              <a x-show="r.download_url" :href="r.download_url"
+                 class="shrink-0 font-mono text-[11px] uppercase tracking-[0.6px] text-brand-dk dark:text-brand hover:opacity-70 transition-opacity">
                 ↓ xlsx
               </a>
             </div>
-            <div class="mt-3 flex items-center gap-4 text-[11px] font-mono">
-              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-jade-500 rounded-full"></span><span class="text-jade-500" x-text="r.lines_auto"></span> auto</span>
-              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-saffron-500 rounded-full"></span><span class="text-saffron-500" x-text="r.lines_reviewed"></span> reviewed</span>
-              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-rose-500 rounded-full"></span><span class="text-rose-500" x-text="r.lines_unmatched"></span> unmatched</span>
+            <div class="mt-3 flex items-center gap-4 font-mono text-[11px]">
+              <span class="flex items-center gap-1.5 text-brand-dk dark:text-brand">
+                <span class="w-1.5 h-1.5 bg-brand rounded-full"></span>
+                <span x-text="r.lines_auto"></span> auto
+              </span>
+              <span class="flex items-center gap-1.5 text-ob_amber">
+                <span class="w-1.5 h-1.5 bg-ob_amber rounded-full"></span>
+                <span x-text="r.lines_reviewed"></span> rev
+              </span>
+              <span class="flex items-center gap-1.5 text-ob_danger">
+                <span class="w-1.5 h-1.5 bg-ob_danger rounded-full"></span>
+                <span x-text="r.lines_unmatched"></span> unm
+              </span>
             </div>
           </div>
         </template>
@@ -1085,18 +1042,19 @@
     </aside>
   </div>
 
-  <!-- ═══════════════ TOASTS ═══════════════ -->
+  <!-- ═══ TOASTS ═══ -->
   <div class="fixed bottom-6 right-6 z-[70] space-y-2">
     <template x-for="t in toasts" :key="t.id">
-      <div class="rounded-lg px-4 py-3 border backdrop-blur bg-ink-900/90 flex items-start gap-3 max-w-sm animate-fade-up shadow-xl"
+      <div class="rounded-xl px-4 py-3 border bg-white dark:bg-[#141414]
+                  shadow-[rgba(0,0,0,0.08)_0px_4px_16px] flex items-start gap-3 max-w-xs animate-fade-up"
            :class="{
-             'border-jade-500/40': t.kind === 'ok',
-             'border-rose-500/40': t.kind === 'err',
-             'border-ink-700': !['ok','err'].includes(t.kind)
+             'border-brand/20': t.kind==='ok',
+             'border-ob_danger/20': t.kind==='err',
+             'border-black/[0.08] dark:border-white/[0.08]': !['ok','err'].includes(t.kind)
            }">
         <div class="w-1 self-stretch rounded-full shrink-0"
-             :class="{ 'bg-jade-500': t.kind==='ok', 'bg-rose-500': t.kind==='err', 'bg-wheat-500': t.kind==='info' }"></div>
-        <p class="text-sm text-ink-100" x-text="t.msg"></p>
+             :class="{ 'bg-brand': t.kind==='ok', 'bg-ob_danger': t.kind==='err', 'bg-ob_amber': t.kind==='info' }"></div>
+        <p class="text-[14px]" x-text="t.msg"></p>
       </div>
     </template>
   </div>
