@@ -798,28 +798,232 @@
         </div>
       </template>
 
-      <!-- Actions -->
-      <template x-if="fbParsed && fbParsed.items.length">
-        <div class="flex items-center gap-3">
-          <button @click="fbCreateInvoice()"
-                  :disabled="fbInvoicing || !!fbInvoiceResult || !fbConnected"
-                  :class="(fbInvoicing||fbInvoiceResult||!fbConnected) ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'"
-                  :title="!fbConnected ? 'Connect FreshBooks first' : ''"
-                  :style="theme==='dark'
-                    ? 'display:inline-flex;align-items:center;gap:6px;padding:8px 20px;background:#ededed;color:#0d0d0d;font-size:14px;font-weight:500;border-radius:9999px;border:none;cursor:pointer;white-space:nowrap;transition:opacity 0.15s;'
-                    : 'display:inline-flex;align-items:center;gap:6px;padding:8px 20px;background:#0d0d0d;color:#ffffff;font-size:14px;font-weight:500;border-radius:9999px;border:none;cursor:pointer;box-shadow:rgba(0,0,0,0.06) 0px 1px 2px;white-space:nowrap;transition:opacity 0.15s;'">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
-            </svg>
-            <span x-text="fbInvoicing ? 'Creating invoice…' : 'Create FreshBooks Invoice'"></span>
-          </button>
-          <button @click="fbReset()"
-                  :style="theme==='dark'
-                    ? 'display:inline-flex;align-items:center;gap:6px;padding:6px 16px;background:transparent;color:#a0a0a0;font-size:14px;font-weight:500;border-radius:9999px;border:1px solid rgba(255,255,255,0.08);cursor:pointer;transition:opacity 0.15s;'
-                    : 'display:inline-flex;align-items:center;gap:6px;padding:6px 16px;background:#ffffff;color:#888888;font-size:14px;font-weight:500;border-radius:9999px;border:1px solid rgba(0,0,0,0.08);cursor:pointer;transition:opacity 0.15s;'">Reset</button>
-          <span class="ml-auto font-mono text-[11px] text-g400">
-            <span x-text="fbParsed.items.length"></span> items · customer #<span x-text="fbCustomerId"></span>
-          </span>
+      <!-- Mode toggle + invoice actions (only when PDF parsed and no result yet) -->
+      <template x-if="fbParsed && fbParsed.items.length && !fbInvoiceResult">
+        <div class="space-y-5">
+
+          <!-- Mode toggle -->
+          <div class="flex items-center gap-2 p-1 bg-g50 dark:bg-[#1a1a1a] rounded-full w-fit border border-black/[0.06] dark:border-white/[0.06]">
+            <button @click="fbSetMode('new')"
+                    :class="fbMode==='new'
+                      ? (theme==='dark' ? 'bg-[#ededed] text-near' : 'bg-near text-white shadow-[rgba(0,0,0,0.06)_0px_1px_2px]')
+                      : 'text-g500 dark:text-[#a0a0a0] hover:text-near dark:hover:text-[#ededed]'"
+                    class="px-4 py-1.5 rounded-full text-[13px] font-medium transition-all">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                New invoice
+              </span>
+            </button>
+            <button @click="fbSetMode('append')"
+                    :class="fbMode==='append'
+                      ? (theme==='dark' ? 'bg-[#ededed] text-near' : 'bg-near text-white shadow-[rgba(0,0,0,0.06)_0px_1px_2px]')
+                      : 'text-g500 dark:text-[#a0a0a0] hover:text-near dark:hover:text-[#ededed]'"
+                    class="px-4 py-1.5 rounded-full text-[13px] font-medium transition-all">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M12 10v4M10 12h4"/></svg>
+                Append to existing
+              </span>
+            </button>
+          </div>
+
+          <!-- ── Append mode: invoice browser ── -->
+          <template x-if="fbMode === 'append'">
+            <div class="rounded-2xl border border-black/[0.05] dark:border-white/[0.08]
+                        bg-white dark:bg-[#141414] overflow-hidden shadow-[rgba(0,0,0,0.03)_0px_2px_4px]">
+
+              <!-- Search bar -->
+              <div class="px-4 py-3 border-b border-black/[0.05] dark:border-white/[0.05] flex items-center gap-3">
+                <svg class="w-3.5 h-3.5 text-g400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input x-model="fbInvoiceSearch"
+                       @input.debounce.400ms="fbLoadInvoices()"
+                       type="text" placeholder="Search by invoice number…"
+                       class="flex-1 bg-transparent text-[13px] text-near dark:text-[#ededed] placeholder:text-g400
+                              focus:outline-none font-mono">
+                <button @click="fbLoadInvoices()"
+                        class="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-g400
+                               hover:bg-black/[0.05] dark:hover:bg-white/[0.06] transition-colors">
+                  <svg class="w-3.5 h-3.5" :class="fbInvoicesLoading ? 'animate-spin' : ''"
+                       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3v5h5"/><path d="M20.5 12A8.5 8.5 0 1 1 6 6.5L3 9"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Column headers -->
+              <div class="px-4 py-2 bg-g50/60 dark:bg-[#0d0d0d]/60 border-b border-black/[0.04] dark:border-white/[0.04]
+                          font-mono text-[10px] uppercase tracking-[0.6px] text-g400 flex items-center gap-3">
+                <div class="w-28">Invoice #</div>
+                <div class="w-28">PO / Order</div>
+                <div class="w-24">Date</div>
+                <div class="flex-1">Status</div>
+                <div class="w-20 text-right">Total</div>
+                <div class="w-16 text-right">Lines</div>
+              </div>
+
+              <!-- Invoice rows -->
+              <div class="divide-y divide-black/[0.03] dark:divide-white/[0.03] max-h-[300px] overflow-y-auto scroll-container">
+                <template x-if="fbInvoicesLoading && fbInvoices.length === 0">
+                  <div class="py-12 text-center text-g400 text-[13px]">Loading invoices…</div>
+                </template>
+                <template x-if="!fbInvoicesLoading && fbInvoices.length === 0">
+                  <div class="py-12 text-center text-g400 text-[13px]">No invoices found.</div>
+                </template>
+                <template x-for="inv in fbInvoices" :key="inv.invoice_id">
+                  <div @click="fbSelectInvoice(inv)"
+                       :class="fbSelectedInvoice?.invoice_id === inv.invoice_id
+                         ? 'bg-brand-lt/20 dark:bg-brand/8 shadow-[inset_3px_0_0_#18E299]'
+                         : 'hover:bg-g50 dark:hover:bg-[#1a1a1a]'"
+                       class="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors">
+                    <div class="w-28 font-mono text-[12px] font-medium"
+                         :class="fbSelectedInvoice?.invoice_id === inv.invoice_id ? 'text-brand-dk dark:text-brand' : 'text-near dark:text-[#ededed]'"
+                         x-text="'#'+inv.invoice_number"></div>
+                    <div class="w-28 font-mono text-[11px] text-g500 truncate" x-text="inv.po_number || '—'"></div>
+                    <div class="w-24 font-mono text-[11px] text-g500" x-text="inv.create_date"></div>
+                    <div class="flex-1">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full font-mono text-[10px] uppercase tracking-[0.4px]"
+                            :class="{
+                              'bg-brand-lt dark:bg-brand/15 text-brand-dk dark:text-brand': inv.status==='paid' || inv.status==='Paid',
+                              'bg-ob_amber/10 text-ob_amber': inv.status==='sent' || inv.status==='outstanding' || inv.status==='Sent' || inv.status==='Outstanding',
+                              'bg-g100 dark:bg-white/[0.06] text-g500': inv.status==='draft' || inv.status==='Draft',
+                              'bg-ob_danger/10 text-ob_danger': inv.status==='overdue' || inv.status==='Overdue',
+                            }"
+                            x-text="inv.status"></span>
+                    </div>
+                    <div class="w-20 text-right font-mono text-[12px] text-g700 dark:text-[#ededed]"
+                         x-text="'$'+parseFloat(inv.total||0).toFixed(2)"></div>
+                    <div class="w-16 text-right font-mono text-[11px] text-g400"
+                         x-text="inv.lines_count+' lines'"></div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Loading detail spinner -->
+              <template x-if="fbDetailLoading">
+                <div class="px-4 py-4 border-t border-black/[0.04] dark:border-white/[0.04] flex items-center gap-2 text-g400 text-[13px]">
+                  <svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M20.5 12A8.5 8.5 0 1 1 6 6.5L3 9"/></svg>
+                  Loading invoice lines…
+                </div>
+              </template>
+
+              <template x-if="fbInvoicesTotal > 30">
+                <p class="px-4 py-2 border-t border-black/[0.04] dark:border-white/[0.04] font-mono text-[10px] text-g400">
+                  Showing 30 of <span x-text="fbInvoicesTotal"></span> — use search to narrow results
+                </p>
+              </template>
+            </div>
+          </template>
+
+          <!-- ── Invoice line preview ── -->
+          <template x-if="fbMode === 'append' && fbSelectedInvoiceDetail">
+            <div class="rounded-2xl border border-black/[0.05] dark:border-white/[0.08]
+                        bg-white dark:bg-[#141414] overflow-hidden shadow-[rgba(0,0,0,0.03)_0px_2px_4px]">
+
+              <!-- Header -->
+              <div class="px-5 py-3 border-b border-black/[0.05] dark:border-white/[0.05] flex items-center gap-3 bg-g50/60 dark:bg-[#0d0d0d]/60">
+                <div class="flex-1">
+                  <p class="text-[13px] font-medium">
+                    Invoice <span class="font-mono text-brand-dk dark:text-brand" x-text="'#'+fbSelectedInvoiceDetail.invoice_number"></span>
+                    <template x-if="fbSelectedInvoiceDetail.po_number">
+                      <span class="text-g400 font-mono text-[11px] ml-2" x-text="'PO: '+fbSelectedInvoiceDetail.po_number"></span>
+                    </template>
+                  </p>
+                  <p class="font-mono text-[10px] text-g400 mt-0.5">
+                    <span x-text="fbSelectedInvoiceDetail.lines.length"></span> existing lines ·
+                    will add <span x-text="fbParsed.items.length"></span> new
+                  </p>
+                </div>
+                <span class="font-mono text-[13px] font-medium" x-text="'$'+parseFloat(fbSelectedInvoiceDetail.total||0).toFixed(2)"></span>
+              </div>
+
+              <!-- Column headers -->
+              <div class="px-5 py-1.5 bg-g50/40 dark:bg-[#0d0d0d]/40 border-b border-black/[0.03] dark:border-white/[0.03]
+                          font-mono text-[10px] uppercase tracking-[0.6px] text-g400 flex items-center gap-3">
+                <div class="flex-1">Description</div>
+                <div class="w-12 text-right">Qty</div>
+                <div class="w-20 text-right">Unit Price</div>
+                <div class="w-20 text-right">Amount</div>
+              </div>
+
+              <!-- Existing lines -->
+              <div class="divide-y divide-black/[0.03] dark:divide-white/[0.03] max-h-[200px] overflow-y-auto scroll-container">
+                <template x-for="(ln, i) in fbSelectedInvoiceDetail.lines" :key="i">
+                  <div class="flex items-center gap-3 px-5 py-2">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-[12px] truncate" x-text="ln.name || ln.description || '—'"></p>
+                    </div>
+                    <div class="w-12 text-right font-mono text-[11px] text-g500" x-text="ln.qty"></div>
+                    <div class="w-20 text-right font-mono text-[11px] text-g500" x-text="'$'+parseFloat(ln.unit_cost||0).toFixed(2)"></div>
+                    <div class="w-20 text-right font-mono text-[11px] text-g700 dark:text-[#ededed]" x-text="'$'+parseFloat(ln.amount||0).toFixed(2)"></div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Divider showing where new lines go -->
+              <div class="flex items-center gap-3 px-5 py-2 border-t border-brand/20 bg-brand-lt/10 dark:bg-brand/5">
+                <div class="flex-1 h-px bg-brand/25"></div>
+                <span class="font-mono text-[10px] uppercase tracking-[0.5px] text-brand-dk dark:text-brand whitespace-nowrap">
+                  + <span x-text="fbParsed.items.length"></span> new lines will be added below
+                </span>
+                <div class="flex-1 h-px bg-brand/25"></div>
+              </div>
+
+              <!-- Preview of new lines being added -->
+              <div class="divide-y divide-black/[0.03] dark:divide-white/[0.03] max-h-[160px] overflow-y-auto scroll-container bg-brand-lt/[0.06] dark:bg-brand/[0.03]">
+                <template x-for="(item, i) in fbParsed.items" :key="i">
+                  <div class="flex items-center gap-3 px-5 py-2">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-[12px] truncate text-g700 dark:text-[#ededed]" x-text="item.description"></p>
+                    </div>
+                    <div class="w-12 text-right font-mono text-[11px] text-g500" x-text="item.qty"></div>
+                    <div class="w-20 text-right font-mono text-[11px] text-g500" x-text="'$'+item.unit_price.toFixed(2)"></div>
+                    <div class="w-20 text-right font-mono text-[11px] text-brand-dk dark:text-brand" x-text="'$'+item.amount.toFixed(2)"></div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Action row -->
+          <div class="flex items-center gap-3">
+            <!-- New invoice CTA -->
+            <template x-if="fbMode === 'new'">
+              <button @click="fbCreateInvoice()"
+                      :disabled="fbInvoicing || !fbConnected"
+                      :class="(fbInvoicing || !fbConnected) ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'"
+                      :title="!fbConnected ? 'Connect FreshBooks first' : ''"
+                      :style="theme==='dark'
+                        ? 'display:inline-flex;align-items:center;gap:6px;padding:8px 20px;background:#ededed;color:#0d0d0d;font-size:14px;font-weight:500;border-radius:9999px;border:none;cursor:pointer;white-space:nowrap;transition:opacity 0.15s;'
+                        : 'display:inline-flex;align-items:center;gap:6px;padding:8px 20px;background:#0d0d0d;color:#ffffff;font-size:14px;font-weight:500;border-radius:9999px;border:none;cursor:pointer;box-shadow:rgba(0,0,0,0.06) 0px 1px 2px;white-space:nowrap;transition:opacity 0.15s;'">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+                </svg>
+                <span x-text="fbInvoicing ? 'Creating…' : 'Create Invoice'"></span>
+              </button>
+            </template>
+
+            <!-- Append CTA -->
+            <template x-if="fbMode === 'append'">
+              <button @click="fbAppendToInvoice()"
+                      :disabled="fbInvoicing || !fbSelectedInvoice || !fbConnected"
+                      :class="(fbInvoicing || !fbSelectedInvoice || !fbConnected) ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'"
+                      :style="theme==='dark'
+                        ? 'display:inline-flex;align-items:center;gap:6px;padding:8px 20px;background:#ededed;color:#0d0d0d;font-size:14px;font-weight:500;border-radius:9999px;border:none;cursor:pointer;white-space:nowrap;transition:opacity 0.15s;'
+                        : 'display:inline-flex;align-items:center;gap:6px;padding:8px 20px;background:#0d0d0d;color:#ffffff;font-size:14px;font-weight:500;border-radius:9999px;border:none;cursor:pointer;box-shadow:rgba(0,0,0,0.06) 0px 1px 2px;white-space:nowrap;transition:opacity 0.15s;'">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M12 10v4M10 12h4"/>
+                </svg>
+                <span x-text="fbInvoicing ? 'Appending…' : (fbSelectedInvoice ? 'Append to #'+fbSelectedInvoice.invoice_number : 'Select an invoice above')"></span>
+              </button>
+            </template>
+
+            <button @click="fbReset()"
+                    :style="theme==='dark'
+                      ? 'display:inline-flex;align-items:center;gap:6px;padding:6px 16px;background:transparent;color:#a0a0a0;font-size:14px;font-weight:500;border-radius:9999px;border:1px solid rgba(255,255,255,0.08);cursor:pointer;transition:opacity 0.15s;'
+                      : 'display:inline-flex;align-items:center;gap:6px;padding:6px 16px;background:#ffffff;color:#888888;font-size:14px;font-weight:500;border-radius:9999px;border:1px solid rgba(0,0,0,0.08);cursor:pointer;transition:opacity 0.15s;'">Reset</button>
+            <span class="ml-auto font-mono text-[11px] text-g400">
+              <span x-text="fbParsed.items.length"></span> items · customer #<span x-text="fbCustomerId"></span>
+            </span>
+          </div>
         </div>
       </template>
 
@@ -830,10 +1034,11 @@
             <svg class="w-5 h-5 text-brand-dk dark:text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
           </div>
           <div class="flex-1">
-            <p class="text-[17px] font-semibold text-brand-dk dark:text-brand">Invoice created!</p>
+            <p class="text-[17px] font-semibold text-brand-dk dark:text-brand"
+               x-text="fbMode==='append' ? 'Lines appended!' : 'Invoice created!'"></p>
             <p class="text-[14px] text-g500 mt-0.5">
               Invoice <span class="font-mono" x-text="'#'+fbInvoiceResult.invoice_number"></span>
-              · status <span class="font-mono" x-text="fbInvoiceResult.status"></span>
+              · <span class="font-mono" x-text="fbInvoiceResult.status"></span>
             </p>
           </div>
           <template x-if="fbInvoiceResult.freshbooks_url">
@@ -842,6 +1047,7 @@
               Open in FreshBooks
             </a>
           </template>
+          <button @click="fbReset()" class="btn-ghost text-[13px] text-g400">New PDF</button>
         </div>
       </template>
     </section>
@@ -1059,6 +1265,6 @@
     </template>
   </div>
 
-  <script src="/app.js"></script>
+  <script src="/app.js?v=2"></script>
 </body>
 </html>

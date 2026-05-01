@@ -72,6 +72,15 @@ function orderBridge() {
     fbInvoicing: false,
     fbInvoiceResult: null,
     fbCustomerId: '151069',   // mirrors FRESHBOOKS_CUSTOMER_ID in config.py
+    // Invoice list / append mode
+    fbMode: 'new',            // 'new' | 'append'
+    fbInvoices: [],           // FbInvoiceListItem[]
+    fbInvoicesLoading: false,
+    fbInvoicesTotal: 0,
+    fbInvoiceSearch: '',
+    fbSelectedInvoice: null,       // FbInvoiceListItem | null
+    fbSelectedInvoiceDetail: null, // FbInvoiceDetail | null (full lines)
+    fbDetailLoading: false,
 
     // ────────── lifecycle ──────────
     async init() {
@@ -611,12 +620,79 @@ function orderBridge() {
       }
     },
 
+    async fbLoadInvoices() {
+      if (!this.fbConnected) return;
+      this.fbInvoicesLoading = true;
+      try {
+        const search = this.fbInvoiceSearch ? `&search=${encodeURIComponent(this.fbInvoiceSearch)}` : '';
+        const r = await fetch(`/api/freshbooks/invoices?per_page=30${search}`);
+        if (r.ok) {
+          const data = await r.json();
+          this.fbInvoices = data.invoices;
+          this.fbInvoicesTotal = data.total;
+        }
+      } catch { /* silently ignore */ }
+      finally { this.fbInvoicesLoading = false; }
+    },
+
+    fbSetMode(mode) {
+      this.fbMode = mode;
+      this.fbSelectedInvoice = null;
+      this.fbSelectedInvoiceDetail = null;
+      if (mode === 'append' && this.fbInvoices.length === 0) this.fbLoadInvoices();
+    },
+
+    async fbSelectInvoice(inv) {
+      if (this.fbSelectedInvoice?.invoice_id === inv.invoice_id) {
+        this.fbSelectedInvoice = null;
+        this.fbSelectedInvoiceDetail = null;
+        return;
+      }
+      this.fbSelectedInvoice = inv;
+      this.fbSelectedInvoiceDetail = null;
+      this.fbDetailLoading = true;
+      try {
+        const r = await fetch(`/api/freshbooks/invoice/${inv.invoice_id}`);
+        if (r.ok) this.fbSelectedInvoiceDetail = await r.json();
+      } catch { /* ignore */ }
+      finally { this.fbDetailLoading = false; }
+    },
+
+    async fbAppendToInvoice() {
+      if (!this.fbParsed || !this.fbSelectedInvoice || this.fbInvoicing) return;
+      this.fbInvoicing = true;
+      try {
+        const res = await fetch(`/api/freshbooks/invoice/${this.fbSelectedInvoice.invoice_id}/append`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: this.fbParsed.items,
+            order_number: this.fbParsed.order_number,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          this.toast('err', err.detail || `Error ${res.status}`);
+          return;
+        }
+        this.fbInvoiceResult = await res.json();
+        this.toast('ok', `Appended ${this.fbParsed.items.length} lines to invoice #${this.fbInvoiceResult.invoice_number}.`);
+      } catch (e) {
+        this.toast('err', 'Network error — could not append to invoice.');
+      } finally {
+        this.fbInvoicing = false;
+      }
+    },
+
     fbReset() {
       this.fbFileName = '';
       this.fbParsed = null;
       this.fbInvoiceResult = null;
       this.fbParsing = false;
       this.fbInvoicing = false;
+      this.fbMode = 'new';
+      this.fbSelectedInvoice = null;
+      this.fbSelectedInvoiceDetail = null;
       // Reset the file input so the same file can be re-selected
       const input = document.getElementById('fb-pdf-file');
       if (input) input.value = '';

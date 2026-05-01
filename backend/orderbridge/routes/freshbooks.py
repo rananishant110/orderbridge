@@ -22,7 +22,9 @@ from fastapi.responses import RedirectResponse
 
 from .. import config, db
 from ..auth import verify_session
-from ..schemas import FbInvoiceRequest, FbInvoiceResponse, FbLineItem, FbParseResponse
+from ..schemas import (FbAppendRequest, FbInvoiceDetail, FbInvoiceLine,
+                       FbInvoiceListItem, FbInvoiceListResponse,
+                       FbInvoiceRequest, FbInvoiceResponse, FbLineItem, FbParseResponse)
 from ..services.pdf_parser import parse_pdf
 
 router = APIRouter(prefix="/api/freshbooks", tags=["freshbooks"])
@@ -98,12 +100,13 @@ async def _get_valid_access_token() -> str:
     return data["access_token"]
 
 
-async def _fb_get(path: str) -> dict:
+async def _fb_get(path: str, params: dict | None = None) -> dict:
     token = await _get_valid_access_token()
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.get(
             f"{config.FRESHBOOKS_API_BASE}{path}",
             headers={"Authorization": f"Bearer {token}", "Api-Version": "alpha"},
+            params=params,
         )
     if not resp.is_success:
         raise HTTPException(502, f"FreshBooks API error {resp.status_code}: {resp.text[:300]}")
@@ -114,6 +117,23 @@ async def _fb_post(path: str, payload: dict) -> dict:
     token = await _get_valid_access_token()
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
+            f"{config.FRESHBOOKS_API_BASE}{path}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+                "Api-Version": "alpha",
+            },
+            content=json.dumps(payload),
+        )
+    if not resp.is_success:
+        raise HTTPException(502, f"FreshBooks API error {resp.status_code}: {resp.text[:400]}")
+    return resp.json()
+
+
+async def _fb_put(path: str, payload: dict) -> dict:
+    token = await _get_valid_access_token()
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.put(
             f"{config.FRESHBOOKS_API_BASE}{path}",
             headers={
                 "Authorization": f"Bearer {token}",
@@ -139,6 +159,7 @@ def fb_connect():
         "response_type": "code",
         "client_id": config.FRESHBOOKS_CLIENT_ID,
         "redirect_uri": config.FRESHBOOKS_REDIRECT_URI,
+        "scope": "user:profile:read user:invoices:read user:invoices:write user:clients:read",
     })
     return RedirectResponse(f"{config.FRESHBOOKS_AUTH_URL}?{params}")
 
@@ -322,4 +343,166 @@ async def create_invoice(
         invoice_number=invoice_number,
         status=str(invoice.get("v3_status") or invoice.get("status", "created")),
         freshbooks_url=f"https://my.freshbooks.com/#/invoice/{invoice_id}" if invoice_id else None,
+    )
+
+
+@router.get("/invoices", response_model=FbInvoiceListResponse)
+async def list_invoices(
+    page: int = 1,
+    per_page: int = 25,
+    search: str = "",
+    _user: str = Depends(verify_session),
+) -> FbInvoiceListResponse:
+    """Return a paginated list of FreshBooks invoices for the connected account."""
+    tokens = _load_tokens()
+    if not tokens:
+        raise HTTPException(401, "FreshBooks not connected")
+
+    account_id = tokens["account_id"] or config.FRESHBOOKS_ACCOUNT_ID
+    params: dict[str, str | int] = {
+        "page": page,
+        "per_page": per_page,
+        "customerid": config.FRESHBOOKS_CUSTOMER_ID,
+    }
+    if search:
+        params["search[invoice_number]"] = search
+
+    token = await _get_valid_access_token()
+    async with httpx.AsyncClient(timeout=20) as client:
+        resp = await client.get(
+            f"{config.FRESHBOOKS_API_BASE}/accounting/account/{account_id}/invoices/invoices",
+            headers={"Authorization": f"Bearer {token}", "Api-Version": "alpha"},
+            params=params,
+        )
+    if not resp.is_success:
+        raise HTTPException(502, f"FreshBooks API error {resp.status_code}: {resp.text[:300]}")
+
+    data = resp.json()
+    result = data.get("response", {}).get("result", {})
+    raw_invoices = result.get("invoices", [])
+    total = result.get("total", len(raw_invoices))
+
+    invoices: list[FbInvoiceListItem] = []
+    for inv in raw_invoices:
+        invoices.append(FbInvoiceListItem(
+            invoice_id=str(inv.get("id", "")),
+            invoice_number=str(inv.get("invoice_number") or inv.get("number") or ""),
+            po_number=str(inv.get("po_number") or ""),
+            create_date=str(inv.get("create_date") or ""),
+            status=str(inv.get("v3_status") or inv.get("status") or ""),
+            total=str(inv.get("amount", {}).get("amount") or inv.get("outstanding", {}).get("amount") or "0.00"),
+            lines_count=len(inv.get("lines", [])),
+        ))
+
+    return FbInvoiceListResponse(invoices=invoices, total=total)
+
+
+@router.get("/invoice/{invoice_id}", response_model=FbInvoiceDetail)
+async def get_invoice_detail(
+    invoice_id: str,
+    _user: str = Depends(verify_session),
+) -> FbInvoiceDetail:
+    """Return full invoice detail including all line items."""
+    tokens = _load_tokens()
+    if not tokens:
+        raise HTTPException(401, "FreshBooks not connected")
+
+    account_id = tokens["account_id"] or config.FRESHBOOKS_ACCOUNT_ID
+    data = await _fb_get(
+        f"/accounting/account/{account_id}/invoices/invoices/{invoice_id}",
+        params={"include[]": "lines"},
+    )
+    inv = data.get("response", {}).get("result", {}).get("invoice", {})
+
+    lines: list[FbInvoiceLine] = []
+    for ln in inv.get("lines", []):
+        unit_cost_raw = ln.get("unit_cost", {})
+        amount_raw    = ln.get("amount", {})
+        lines.append(FbInvoiceLine(
+            lineid=ln.get("lineid"),
+            name=ln.get("name", ""),
+            description=ln.get("description", ""),
+            qty=str(ln.get("qty", "")),
+            unit_cost=str(unit_cost_raw.get("amount", "0.00") if isinstance(unit_cost_raw, dict) else unit_cost_raw),
+            amount=str(amount_raw.get("amount", "0.00") if isinstance(amount_raw, dict) else amount_raw),
+        ))
+
+    return FbInvoiceDetail(
+        invoice_id=str(inv.get("id", invoice_id)),
+        invoice_number=str(inv.get("invoice_number") or inv.get("number") or ""),
+        po_number=str(inv.get("po_number") or ""),
+        create_date=str(inv.get("create_date") or ""),
+        status=str(inv.get("v3_status") or inv.get("status") or ""),
+        total=str(inv.get("amount", {}).get("amount") or "0.00"),
+        lines=lines,
+    )
+
+
+@router.post("/invoice/{invoice_id}/append", response_model=FbInvoiceResponse)
+async def append_to_invoice(
+    invoice_id: str,
+    body: FbAppendRequest,
+    _user: str = Depends(verify_session),
+) -> FbInvoiceResponse:
+    """Fetch an existing invoice and append new line items to it."""
+    if not body.items:
+        raise HTTPException(400, "No items to append")
+
+    tokens = _load_tokens()
+    if not tokens:
+        raise HTTPException(401, "FreshBooks not connected")
+
+    account_id = tokens["account_id"] or config.FRESHBOOKS_ACCOUNT_ID
+
+    # Fetch the existing invoice — include[]=lines ensures line data is returned
+    existing = await _fb_get(
+        f"/accounting/account/{account_id}/invoices/invoices/{invoice_id}",
+        params={"include[]": "lines"},
+    )
+    inv = existing.get("response", {}).get("result", {}).get("invoice", {})
+    existing_lines: list[dict] = inv.get("lines", [])
+
+    # Keep only writable fields; include lineid so FreshBooks preserves each line
+    _SKIP = {"subtotal", "amount", "taxes", "updated", "transitional_lineid"}
+    clean_lines = []
+    for ln in existing_lines:
+        kept = {k: v for k, v in ln.items() if k not in _SKIP}
+        # qty must be a string for the FreshBooks API
+        if "qty" in kept:
+            kept["qty"] = str(kept["qty"])
+        clean_lines.append(kept)
+
+    # New lines to append (no lineid — FreshBooks will assign one)
+    new_lines = [
+        {
+            "type": 0,
+            "name": item.description,
+            "unit_cost": {"amount": f"{item.unit_price:.2f}", "code": "USD"},
+            "qty": str(item.qty),
+        }
+        for item in body.items
+    ]
+
+    po_number = body.order_number or inv.get("po_number") or ""
+    payload = {
+        "invoice": {
+            "lines": clean_lines + new_lines,
+            "po_number": po_number,
+        }
+    }
+
+    data = await _fb_put(
+        f"/accounting/account/{account_id}/invoices/invoices/{invoice_id}",
+        payload,
+    )
+
+    updated = data.get("response", {}).get("result", {}).get("invoice", {})
+    inv_id  = str(updated.get("id", invoice_id))
+    inv_num = str(updated.get("invoice_number") or updated.get("number") or "")
+
+    return FbInvoiceResponse(
+        invoice_id=inv_id,
+        invoice_number=inv_num,
+        status=str(updated.get("v3_status") or updated.get("status", "updated")),
+        freshbooks_url=f"https://my.freshbooks.com/#/invoice/{inv_id}" if inv_id else None,
     )

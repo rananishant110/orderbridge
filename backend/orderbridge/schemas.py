@@ -94,3 +94,42 @@ class FbInvoiceResponse(BaseModel):
     invoice_number: str
     status: str
     freshbooks_url: Optional[str] = None
+
+
+class FbInvoiceListItem(BaseModel):
+    invoice_id: str
+    invoice_number: str
+    po_number: str
+    create_date: str
+    status: str
+    total: str
+    lines_count: int
+
+
+class FbInvoiceListResponse(BaseModel):
+    invoices: list[FbInvoiceListItem]
+    total: int
+
+
+class FbInvoiceLine(BaseModel):
+    lineid: int | None = None
+    name: str
+    description: str = ""
+    qty: str
+    unit_cost: str   # dollar amount string e.g. "12.50"
+    amount: str      # line total
+
+
+class FbInvoiceDetail(BaseModel):
+    invoice_id: str
+    invoice_number: str
+    po_number: str
+    create_date: str
+    status: str
+    total: str
+    lines: list[FbInvoiceLine]
+
+
+class FbAppendRequest(BaseModel):
+    items: list[FbLineItem]
+    order_number: str = ""
