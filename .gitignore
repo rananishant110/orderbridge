@@ -23,3 +23,11 @@ storage/templates/
 
 # Raw sample workbooks at repo root (not needed in Git)
 *.xlsx
+
+# Ignore AI-DLC workflow files
+.aidlc-rule-details
+/aidlc-docs
+.github
+
+# Settings for VS Code, which may contain local paths and preferences
+.vscode/

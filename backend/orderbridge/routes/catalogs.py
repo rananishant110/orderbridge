@@ -104,11 +104,23 @@ def gm_listing(user: str = Depends(verify_session)):
     for r in rows:
         sheets[r.sheet].append({
             "item_no": r.item_no,
+            "sheet": r.sheet,
             "description": r.description,
             "price": r.price,
             "side": r.side,
             "row_index": r.row_index,
         })
+    # Deduplicate by (item_no, side) within each sheet — the Excel file can contain
+    # duplicate rows that would cause Alpine x-for duplicate-key errors on the frontend.
+    for sheet_name, items in sheets.items():
+        seen: set[tuple] = set()
+        deduped: list[dict] = []
+        for item in items:
+            key = (item["item_no"], item["side"])
+            if key not in seen:
+                seen.add(key)
+                deduped.append(item)
+        sheets[sheet_name] = deduped
     # Sort inside each sheet by item number for stable display.
     for items in sheets.values():
         items.sort(key=lambda x: (x["item_no"] is None, x["item_no"] or 0))

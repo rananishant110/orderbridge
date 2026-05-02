@@ -9,44 +9,212 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-            mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
-          },
-          colors: {
-            brand:     '#18E299',
-            'brand-lt':'#d4fae8',
-            'brand-dk':'#0fa76e',
-            near:      '#0d0d0d',
-            g700:      '#333333',
-            g500:      '#666666',
-            g400:      '#888888',
-            g200:      '#e5e5e5',
-            g100:      '#f5f5f5',
-            g50:       '#fafafa',
-            ob_danger: '#d45656',
-          },
-          keyframes: {
-            'fade-up': { '0%': { opacity: 0, transform: 'translateY(8px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-          },
-          animation: { 'fade-up': 'fade-up .35s ease-out both' },
-        }
-      }
-    }
-  </script>
-
   <style>
-    input[type="number"]::-webkit-inner-spin-button,
-    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
-    ::selection { background: rgba(24,226,153,0.2); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --brand:    #18E299;
+      --brand-dk: #0fa76e;
+      --near:     #0d0d0d;
+      --danger:   #d45656;
+      --sage:     #cce4d6;
+      --sage-lt:  #dff0e8;
+      --sage-md:  #b8d5c6;
+      --sage-dk:  #9dc4b0;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      background: var(--sage-lt);
+    }
+
+    /* ── Botanical SVG pattern ── */
+    .bg-pattern {
+      position: fixed;
+      inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+
+    /* ── Center wrap ── */
+    .center-wrap {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      animation: fadeUp .45s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Logo row ── */
+    .logo-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: var(--brand);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 16px rgba(24,226,153,0.4);
+    }
+
+    .logo-name {
+      font-size: 21px;
+      font-weight: 600;
+      color: var(--near);
+      letter-spacing: -0.4px;
+    }
+
+    .logo-sub {
+      margin-top: 5px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.35);
+      font-family: ui-monospace, monospace;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 36px;
+      width: 100%;
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.05),
+        0 8px 40px rgba(0,0,0,0.1);
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(0,0,0,0.35);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      font-family: ui-monospace, monospace;
+      margin-bottom: 22px;
+    }
+
+    /* ── Fields ── */
+    .field-group { margin-bottom: 16px; }
+
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .field-input {
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: 9999px;
+      border: 1px solid rgba(0,0,0,0.1);
+      background: #f7f7f7;
+      color: var(--near);
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    .field-input::placeholder { color: #bbb; }
+    .field-input:focus {
+      border-color: var(--brand);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(24,226,153,0.15);
+    }
+
+    /* ── Error ── */
+    #error-msg {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(212,86,86,0.2);
+      background: rgba(212,86,86,0.05);
+      margin-bottom: 16px;
+    }
+    #error-msg.show { display: flex; }
+    #error-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--danger);
+    }
+
+    /* ── Submit ── */
+    .btn-submit {
+      width: 100%;
+      margin-top: 20px;
+      padding: 11px 24px;
+      border-radius: 9999px;
+      border: none;
+      background: var(--near);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity .15s, transform .1s;
+      letter-spacing: 0.2px;
+    }
+    .btn-submit:hover:not(:disabled) { opacity: 0.82; }
+    .btn-submit:active:not(:disabled) { transform: scale(0.98); }
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Card footer ── */
+    .card-footer {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+      justify-content: space-between;
+    }
+    .card-footer span {
+      font-size: 11px;
+      color: #bbb;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      font-family: ui-monospace, monospace;
+    }
+
+    /* ── Spinner ── */
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { animation: spin .7s linear infinite; }
+
+    /* ── Mobile ── */
+    @media (max-width: 480px) {
+      .card { padding: 28px 24px; }
+    }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -54,191 +222,197 @@
   </style>
 </head>
 
-<body class="font-sans bg-white text-near antialiased min-h-screen flex items-center justify-center relative overflow-hidden">
+<body>
+<div class="page">
 
-  <!-- Atmospheric gradient -->
-  <div class="pointer-events-none fixed inset-0"
-       style="background: radial-gradient(ellipse 90% 60% at 50% -5%, rgba(24,226,153,0.10), transparent 65%);"></div>
+  <!-- Botanical SVG background -->
+  <svg class="bg-pattern" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <!-- Base wash -->
+    <rect width="1440" height="900" fill="#dff0e8"/>
 
-  <!-- Subtle grid texture -->
-  <div class="pointer-events-none fixed inset-0 opacity-[0.025]"
-       style="background-image: linear-gradient(rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,1) 1px, transparent 1px);
-              background-size: 40px 40px;"></div>
+    <!-- Large flowing background shapes -->
+    <path d="M-80,180 C80,60 220,240 380,160 C540,80 600,300 800,220 C1000,140 1060,360 1260,260 C1380,200 1480,120 1540,80 L1540,-10 L-80,-10 Z" fill="rgba(185,220,200,0.6)"/>
+    <path d="M-80,780 C120,680 280,840 460,760 C640,680 700,860 900,780 C1100,700 1180,860 1380,760 C1450,720 1520,680 1540,660 L1540,910 L-80,910 Z" fill="rgba(185,220,200,0.5)"/>
 
-  <main class="relative z-10 w-full max-w-[400px] px-5 py-12 animate-fade-up">
+    <!-- Botanical organic blobs — left cluster -->
+    <!-- Large leaf 1 -->
+    <path d="M40,320 C60,200 140,160 180,240 C220,320 200,460 140,500 C80,540 20,440 40,320 Z" fill="rgba(155,200,175,0.55)"/>
+    <!-- Stem -->
+    <path d="M110,500 Q130,560 160,620" stroke="rgba(130,185,160,0.5)" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <!-- Large leaf 2 -->
+    <path d="M0,520 C20,420 90,390 120,460 C150,530 130,650 70,680 C10,710 -20,620 0,520 Z" fill="rgba(155,200,175,0.45)"/>
+    <!-- Small leaf top-left -->
+    <path d="M60,120 C80,60 140,50 150,110 C160,170 110,220 70,210 C30,200 40,180 60,120 Z" fill="rgba(165,210,185,0.5)"/>
+    <path d="M105,210 Q120,270 115,330" stroke="rgba(130,185,160,0.4)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- Leaf cluster bottom-left -->
+    <path d="M-30,700 C-10,620 60,600 80,660 C100,720 70,800 20,820 C-30,840 -50,780 -30,700 Z" fill="rgba(145,195,168,0.45)"/>
+    <path d="M100,750 C80,680 120,650 160,700 C200,750 190,820 150,840 C110,860 100,820 100,750 Z" fill="rgba(150,200,172,0.4)"/>
+    <!-- Tall thin leaf -->
+    <path d="M200,50 C215,0 270,-10 275,60 C280,130 255,210 230,230 C205,250 185,180 200,50 Z" fill="rgba(160,205,178,0.45)"/>
+    <path d="M237,230 Q240,300 235,380" stroke="rgba(130,185,160,0.4)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- Rounded blob -->
+    <ellipse cx="330" cy="120" rx="55" ry="80" fill="rgba(165,210,183,0.35)" transform="rotate(-15,330,120)"/>
+    <!-- Sprig -->
+    <path d="M290,440 Q310,380 340,350 Q360,330 380,310" stroke="rgba(125,180,155,0.4)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M340,350 C360,320 400,310 410,340 C420,370 390,400 360,390 Z" fill="rgba(155,200,175,0.4)"/>
+    <path d="M380,310 C400,280 440,275 445,305 C450,335 420,355 395,345 Z" fill="rgba(155,200,175,0.38)"/>
+
+    <!-- Right-side botanical cluster -->
+    <!-- Large sweeping leaf -->
+    <path d="M1380,80 C1420,30 1480,20 1490,90 C1500,160 1470,260 1430,290 C1390,320 1360,240 1380,80 Z" fill="rgba(150,198,172,0.45)"/>
+    <path d="M1455,290 Q1450,360 1440,430" stroke="rgba(130,185,160,0.4)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <!-- Leaf pair right -->
+    <path d="M1300,300 C1320,240 1380,230 1390,290 C1400,350 1370,420 1320,440 C1270,460 1280,360 1300,300 Z" fill="rgba(155,200,175,0.4)"/>
+    <path d="M1350,440 C1370,380 1430,370 1445,430 C1460,490 1430,550 1380,565 C1330,580 1330,500 1350,440 Z" fill="rgba(148,195,170,0.38)"/>
+    <!-- Bottom-right cluster -->
+    <path d="M1460,600 C1490,540 1540,530 1545,600 C1550,670 1520,750 1480,770 C1440,790 1430,660 1460,600 Z" fill="rgba(145,193,167,0.45)"/>
+    <path d="M1350,700 C1370,640 1420,635 1430,690 C1440,745 1415,800 1375,810 C1335,820 1330,760 1350,700 Z" fill="rgba(150,198,172,0.4)"/>
+    <path d="M1250,780 C1265,730 1310,725 1318,775 C1326,825 1300,870 1265,876 C1230,882 1235,830 1250,780 Z" fill="rgba(148,195,168,0.38)"/>
+    <!-- Stem right -->
+    <path d="M1405,565 Q1410,620 1400,690 Q1395,730 1390,780" stroke="rgba(130,185,160,0.4)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- Floating small leaves -->
+    <path d="M1200,160 C1210,120 1250,115 1255,150 C1260,185 1235,220 1208,225 C1181,230 1190,200 1200,160 Z" fill="rgba(160,205,178,0.35)"/>
+    <path d="M1130,280 C1140,240 1175,238 1178,268 C1181,298 1158,330 1133,333 C1108,336 1120,320 1130,280 Z" fill="rgba(155,200,175,0.3)"/>
+
+    <!-- Center subtle texture blobs -->
+    <ellipse cx="720" cy="80" rx="90" ry="40" fill="rgba(170,212,188,0.25)" transform="rotate(-8,720,80)"/>
+    <ellipse cx="680" cy="820" rx="110" ry="45" fill="rgba(170,212,188,0.22)" transform="rotate(5,680,820)"/>
+
+    <!-- Delicate vine lines -->
+    <path d="M420,30 C460,-10 500,20 520,60 C540,100 570,80 600,50" stroke="rgba(130,180,155,0.35)" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M430,500 C460,470 490,490 510,460 C530,430 555,445 575,420" stroke="rgba(125,178,152,0.3)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M850,860 C880,840 900,860 920,840 C940,820 960,840 985,820" stroke="rgba(130,180,155,0.3)" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </svg>
+
+  <!-- Centered content -->
+  <div class="center-wrap">
 
     <!-- Logo -->
-    <div class="flex flex-col items-center mb-10">
-      <div class="w-12 h-12 rounded-xl bg-brand flex items-center justify-center mb-5
-                  shadow-[0_8px_24px_-8px_rgba(24,226,153,0.45)]">
-        <svg viewBox="0 0 24 24" class="w-6 h-6 text-near" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#0d0d0d" stroke-width="2.3" stroke-linecap="round">
           <path d="M4 17c3-2 5-2 8 0s5 2 8 0"/>
           <path d="M4 12c3-2 5-2 8 0s5 2 8 0"/>
           <path d="M4 7c3-2 5-2 8 0s5 2 8 0"/>
         </svg>
       </div>
-      <h1 class="text-[1.75rem] font-semibold tracking-[-0.5px] leading-none">OrderBridge</h1>
-      <p class="mt-2 font-mono text-[11px] uppercase tracking-[0.55px] text-g400">
-        OneStop → GrainMarket
-      </p>
+      <div class="logo-name">OrderBridge</div>
+      <div class="logo-sub">OneStop → GrainMarket</div>
     </div>
 
     <!-- Card -->
-    <div class="bg-white rounded-2xl border border-black/[0.06] shadow-[rgba(0,0,0,0.06)_0px_4px_24px]">
+    <div class="card">
+      <p class="card-title">Staff access</p>
 
-      <div class="px-8 py-8">
-        <p class="font-mono text-[11px] uppercase tracking-[0.55px] text-g400 mb-6">Staff access</p>
+      <form id="login-form" novalidate>
 
-        <form id="login-form" novalidate class="space-y-4">
+        <div class="field-group">
+          <label for="username" class="field-label">Username</label>
+          <input id="username" type="text" autocomplete="username" spellcheck="false"
+                 placeholder="onestop" class="field-input" />
+        </div>
 
-          <!-- Username -->
-          <div>
-            <label for="username" class="block text-[12px] font-medium text-g500 mb-1.5">
-              Username
-            </label>
-            <input id="username" type="text" autocomplete="username" spellcheck="false"
-                   placeholder="onestop"
-                   class="w-full px-4 py-2.5 rounded-full border border-black/[0.08]
-                          text-[14px] font-medium text-near placeholder:text-g400
-                          focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15
-                          transition-colors bg-white" />
-          </div>
+        <div class="field-group">
+          <label for="password" class="field-label">Password</label>
+          <input id="password" type="password" autocomplete="current-password"
+                 placeholder="••••••••" class="field-input" />
+        </div>
 
-          <!-- Password -->
-          <div>
-            <label for="password" class="block text-[12px] font-medium text-g500 mb-1.5">
-              Password
-            </label>
-            <input id="password" type="password" autocomplete="current-password"
-                   placeholder="••••••••"
-                   class="w-full px-4 py-2.5 rounded-full border border-black/[0.08]
-                          text-[14px] font-medium text-near placeholder:text-g400
-                          focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15
-                          transition-colors bg-white" />
-          </div>
+        <div id="error-msg">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d45656" stroke-width="2" style="flex-shrink:0">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p id="error-text">Invalid credentials — try again.</p>
+        </div>
 
-          <!-- Error -->
-          <div id="error-msg"
-               class="hidden items-center gap-2.5 rounded-xl border border-ob_danger/20 bg-ob_danger/[0.04] px-4 py-3">
-            <svg class="w-3.5 h-3.5 shrink-0 text-ob_danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <p id="error-text" class="text-[12px] font-medium text-ob_danger">Invalid credentials — try again.</p>
-          </div>
+        <button type="submit" id="submit-btn" class="btn-submit">
+          <svg id="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          <svg id="btn-spinner" class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;display:none;">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round"/>
+          </svg>
+          <span id="btn-text">Sign in</span>
+        </button>
 
-          <!-- Submit -->
-          <div class="pt-1">
-            <button type="submit" id="submit-btn"
-                    class="w-full inline-flex items-center justify-center gap-2
-                           px-6 py-2.5 rounded-full
-                           bg-near text-white text-[14px] font-medium
-                           shadow-[rgba(0,0,0,0.06)_0px_1px_2px]
-                           hover:opacity-90 active:opacity-80
-                           disabled:opacity-50 disabled:cursor-not-allowed
-                           transition-opacity cursor-pointer">
-              <svg id="btn-icon" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                <polyline points="10 17 15 12 10 7"/>
-                <line x1="15" y1="12" x2="3" y2="12"/>
-              </svg>
-              <svg id="btn-spinner" class="w-4 h-4 shrink-0 hidden spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round"/>
-              </svg>
-              <span id="btn-text">Sign in</span>
-            </button>
-          </div>
-        </form>
-      </div>
+      </form>
 
-      <!-- Footer strip -->
-      <div class="border-t border-black/[0.05] px-8 py-3 flex items-center justify-between">
-        <span class="font-mono text-[10px] uppercase tracking-[0.5px] text-g400">Internal tool</span>
-        <span class="font-mono text-[10px] uppercase tracking-[0.5px] text-g400">OneStop Distribution</span>
+      <div class="card-footer">
+        <span>Internal tool</span>
+        <span>OneStop Distribution</span>
       </div>
     </div>
 
-  </main>
+  </div><!-- /center-wrap -->
 
-  <script>
-    // ── If already authenticated, skip login ──
-    (async () => {
-      try {
-        const r = await fetch('/api/me');
-        if (r.ok) window.location.href = '/';
-      } catch {}
-    })();
+</div>
 
-    // ── Form ──
-    const form    = document.getElementById('login-form');
-    const errEl   = document.getElementById('error-msg');
-    const errText = document.getElementById('error-text');
-    const btn     = document.getElementById('submit-btn');
-    const btnText = document.getElementById('btn-text');
-    const btnIcon = document.getElementById('btn-icon');
-    const spinner = document.getElementById('btn-spinner');
+<script>
+  (async () => {
+    try { const r = await fetch('/api/me'); if (r.ok) window.location.href = '/'; } catch {}
+  })();
 
-    function setLoading(on) {
-      btn.disabled = on;
-      btnText.textContent = on ? 'Signing in…' : 'Sign in';
-      btnIcon.classList.toggle('hidden', on);
-      spinner.classList.toggle('hidden', !on);
-    }
+  const form    = document.getElementById('login-form');
+  const errEl   = document.getElementById('error-msg');
+  const errText = document.getElementById('error-text');
+  const btn     = document.getElementById('submit-btn');
+  const btnText = document.getElementById('btn-text');
+  const btnIcon = document.getElementById('btn-icon');
+  const spinner = document.getElementById('btn-spinner');
 
-    function showError(msg) {
-      errText.textContent = msg;
-      errEl.classList.remove('hidden');
-      errEl.classList.add('flex');
-      errEl.animate([
-        { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' },
-        { transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' },
-        { transform: 'translateX(0)' },
-      ], { duration: 320, easing: 'ease-out' });
-    }
+  function setLoading(on) {
+    btn.disabled = on;
+    btnText.textContent = on ? 'Signing in…' : 'Sign in';
+    btnIcon.style.display = on ? 'none' : '';
+    spinner.style.display = on ? '' : 'none';
+  }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      errEl.classList.add('hidden');
-      errEl.classList.remove('flex');
+  function showError(msg) {
+    errText.textContent = msg;
+    errEl.classList.add('show');
+    errEl.animate([
+      { transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' },
+      { transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' },
+      { transform: 'translateX(0)' },
+    ], { duration: 300, easing: 'ease-out' });
+  }
 
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errEl.classList.remove('show');
 
-      if (!username || !password) {
-        showError('Please enter both username and password.');
-        return;
-      }
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    if (!username || !password) { showError('Please enter both username and password.'); return; }
 
-      setLoading(true);
-
-      try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        });
-
-        if (res.ok) {
-          btnText.textContent = 'Welcome back…';
-          setTimeout(() => { window.location.href = '/'; }, 200);
-        } else if (res.status === 401) {
-          showError('Invalid credentials — check your username and password.');
-          setLoading(false);
-        } else {
-          showError(`Server error (${res.status}) — contact your administrator.`);
-          setLoading(false);
-        }
-      } catch {
-        showError('Network error — check your connection and try again.');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (res.ok) {
+        btnText.textContent = 'Welcome back…';
+        setTimeout(() => { window.location.href = '/'; }, 200);
+      } else if (res.status === 401) {
+        showError('Invalid credentials — check your username and password.');
+        setLoading(false);
+      } else {
+        showError(`Server error (${res.status}) — contact your administrator.`);
         setLoading(false);
       }
-    });
+    } catch {
+      showError('Network error — check your connection and try again.');
+      setLoading(false);
+    }
+  });
 
-    ['username', 'password'].forEach(id => {
-      document.getElementById(id).addEventListener('input', () => {
-        errEl.classList.add('hidden');
-        errEl.classList.remove('flex');
-      });
-    });
-  </script>
+  ['username', 'password'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => errEl.classList.remove('show'));
+  });
+</script>
 </body>
 </html>

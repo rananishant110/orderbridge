@@ -74,6 +74,7 @@ function orderBridge() {
     fbCustomerId: '151069',   // mirrors FRESHBOOKS_CUSTOMER_ID in config.py
     // Invoice list / append mode
     fbMode: 'new',            // 'new' | 'append'
+    fbAppendPanelOpen: false,
     fbInvoices: [],           // FbInvoiceListItem[]
     fbInvoicesLoading: false,
     fbInvoicesTotal: 0,
@@ -237,7 +238,8 @@ function orderBridge() {
         this.activeSheet = line.picked.sheet;
         this.selectedGmKey = this.gmKey(line.picked);
         this.$nextTick(() => {
-          const el = document.getElementById(`gm-${line.picked.item_no}-${line.picked.sheet}`);
+          const el = document.getElementById(`gm-${line.picked.item_no}-${line.picked.sheet}-left`)
+                  || document.getElementById(`gm-${line.picked.item_no}-${line.picked.sheet}-right`);
           el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
         });
       }
@@ -475,12 +477,35 @@ function orderBridge() {
     },
 
     get filteredGmItems() {
-      if (!this.activeSheetData) return [];
-      const q = this.gmQuery.trim().toLowerCase();
-      if (!q) return this.activeSheetData.items;
-      return this.activeSheetData.items.filter(
-        i => i.description.toLowerCase().includes(q) || String(i.item_no).includes(q)
-      );
+      const q = (this.gmQuery || '').trim().toLowerCase();
+      if (q) {
+        // Search across ALL sheets when a query is active.
+        const seen = new Set();
+        const results = [];
+        for (const s of this.gmSheets) {
+          if (!s || !s.items) continue;
+          for (const i of s.items) {
+            if (!i || i.item_no == null) continue;
+            const k = `${i.item_no}::${i.sheet ?? s.sheet}::${i.side ?? ''}`;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            if (i.description.toLowerCase().includes(q) || String(i.item_no).includes(q))
+              results.push(i);
+          }
+        }
+        return results;
+      }
+      // No query — show current tab only (deduplicated).
+      const sheet = this.activeSheetData;
+      if (!sheet || !sheet.items) return [];
+      const seen = new Set();
+      return sheet.items.filter(i => {
+        if (!i || i.item_no == null) return false;
+        const k = `${i.item_no}::${i.sheet ?? sheet.sheet}::${i.side ?? ''}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
     },
 
     sheetFilledCount(sheetName) {
@@ -639,7 +664,10 @@ function orderBridge() {
       this.fbMode = mode;
       this.fbSelectedInvoice = null;
       this.fbSelectedInvoiceDetail = null;
-      if (mode === 'append' && this.fbInvoices.length === 0) this.fbLoadInvoices();
+      if (mode === 'append') {
+        this.fbAppendPanelOpen = true;
+        if (this.fbInvoices.length === 0) this.fbLoadInvoices();
+      }
     },
 
     async fbSelectInvoice(inv) {
@@ -676,6 +704,7 @@ function orderBridge() {
           return;
         }
         this.fbInvoiceResult = await res.json();
+        this.fbAppendPanelOpen = false;
         this.toast('ok', `Appended ${this.fbParsed.items.length} lines to invoice #${this.fbInvoiceResult.invoice_number}.`);
       } catch (e) {
         this.toast('err', 'Network error — could not append to invoice.');
@@ -691,6 +720,7 @@ function orderBridge() {
       this.fbParsing = false;
       this.fbInvoicing = false;
       this.fbMode = 'new';
+      this.fbAppendPanelOpen = false;
       this.fbSelectedInvoice = null;
       this.fbSelectedInvoiceDetail = null;
       // Reset the file input so the same file can be re-selected
