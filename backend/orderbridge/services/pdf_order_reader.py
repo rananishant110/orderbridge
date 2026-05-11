@@ -15,6 +15,7 @@ import base64
 import io
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Optional
 
@@ -174,44 +175,58 @@ def extract_page_images(pdf_bytes: bytes, resolution: int = 150) -> list[PageIma
     return images
 
 
+def _process_page(
+    page_img: PageImage,
+    provider: str,
+    api_key: str,
+    model: str,
+    prompt: str,
+) -> tuple[list[ExtractedLine], list[str]]:
+    """Send one page to the vision LLM and return its lines + warnings."""
+    try:
+        raw = _call_vision(page_img.image, prompt, provider, api_key, model)
+    except Exception as e:
+        return [], [f"Page {page_img.page_num}: API error — {e}"]
+
+    lines, warnings = _parse_items(raw, page_img.page_num)
+    if warnings and not lines:
+        retry_prompt = (
+            prompt
+            + "\n\nIMPORTANT: Your previous response was not valid JSON. "
+            "Return ONLY a JSON array, nothing else."
+        )
+        try:
+            raw2 = _call_vision(page_img.image, retry_prompt, provider, api_key, model)
+            lines, warnings = _parse_items(raw2, page_img.page_num)
+        except Exception as e:
+            return [], [f"Page {page_img.page_num}: retry failed — {e}"]
+
+    return lines, warnings
+
+
 def extract_via_vision(
     images: list[PageImage],
     provider: str,
     api_key: str,
     model: str,
     prompt: str,
+    max_workers: int = 8,
 ) -> tuple[list[ExtractedLine], list[str]]:
-    """Send every page to the vision LLM and aggregate extracted lines."""
-    all_lines: list[ExtractedLine] = []
-    all_warnings: list[str] = []
-
-    # Validate provider before processing any pages
+    """Send every page to the vision LLM in parallel and aggregate extracted lines."""
     if provider not in ("gemini", "anthropic"):
         raise ValueError(f"Unknown PDF_VISION_PROVIDER: {provider!r}. Use 'gemini' or 'anthropic'.")
 
-    for page_img in images:
-        try:
-            raw = _call_vision(page_img.image, prompt, provider, api_key, model)
-        except Exception as e:
-            all_warnings.append(f"Page {page_img.page_num}: API error — {e}")
-            continue
+    all_lines: list[ExtractedLine] = []
+    all_warnings: list[str] = []
 
-        # First parse attempt
-        lines, warnings = _parse_items(raw, page_img.page_num)
-        if warnings and not lines:
-            # Retry once with an explicit format nudge
-            retry_prompt = (
-                prompt
-                + "\n\nIMPORTANT: Your previous response was not valid JSON. "
-                "Return ONLY a JSON array, nothing else."
-            )
-            try:
-                raw2 = _call_vision(page_img.image, retry_prompt, provider, api_key, model)
-                lines, warnings = _parse_items(raw2, page_img.page_num)
-            except Exception as e:
-                all_warnings.append(f"Page {page_img.page_num}: retry failed — {e}")
-                continue
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        # Preserve page order in output by mapping over the input list
+        results = list(pool.map(
+            lambda p: _process_page(p, provider, api_key, model, prompt),
+            images,
+        ))
 
+    for lines, warnings in results:
         all_lines.extend(lines)
         all_warnings.extend(warnings)
 

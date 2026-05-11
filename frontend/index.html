@@ -140,6 +140,20 @@
         </svg>
         Orders
       </button>
+      <button @click="currentTab = 'invoice'"
+              :class="currentTab === 'invoice'
+                ? 'border-b-2 border-brand text-near dark:text-[#ededed]'
+                : 'border-b-2 border-transparent text-g400 hover:text-g700 dark:hover:text-[#ededed]'"
+              class="flex items-center gap-2 px-4 py-3.5 text-[15px] font-medium transition-colors">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="8" y1="3" x2="8" y2="9"/>
+        </svg>
+        Invoice
+        <template x-if="invoiceLines.length">
+          <span class="ml-0.5 px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-mono text-[11px] leading-none"
+                x-text="invoiceLines.length"></span>
+        </template>
+      </button>
       <button @click="currentTab = 'freshbooks'"
               :class="currentTab === 'freshbooks'
                 ? 'border-b-2 border-brand text-near dark:text-[#ededed]'
@@ -195,7 +209,7 @@
               <h3 class="text-[20px] font-semibold tracking-[-0.2px] mb-1">Drop a filled OneStop order</h3>
               <p class="text-[15px] text-g500 dark:text-[#a0a0a0] mb-7">
                 or <span class="text-brand-dk dark:text-brand underline underline-offset-4 decoration-brand/40">click to browse</span>
-                <span class="font-mono text-[11px] text-g400 ml-1">.xlsx only</span>
+                <span class="font-mono text-[11px] text-g400 ml-1">.xlsx or .pdf</span>
               </p>
               <div class="flex items-center gap-5 font-mono text-[11px] uppercase tracking-[0.6px]">
                 <span class="flex items-center gap-1.5 text-brand-dk dark:text-brand">
@@ -583,6 +597,10 @@
           <p class="text-[14px] font-medium flex-1">
             Wrote <span class="font-mono text-brand-dk dark:text-brand" x-text="applyResult?.lines_written"></span> line(s) to GrainMarket.
           </p>
+          <button @click="currentTab = 'invoice'" x-show="invoiceLines.length"
+                  class="btn-outline text-[13px] shrink-0">
+            View OneStop Invoice (<span x-text="invoiceLines.length"></span> items)
+          </button>
           <a :href="applyResult?.download_url" class="btn-primary text-[13px] shrink-0">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v14"/><path d="M7 12l5 5 5-5"/><path d="M4 21h16"/></svg>
             Download .xlsx
@@ -844,6 +862,100 @@
           </div>
         </div>
       </div>
+    </section>
+  </template>
+
+  <!-- ═══ INVOICE TAB ═══ -->
+  <template x-if="currentTab === 'invoice'">
+    <section class="relative px-8 pt-12 pb-20 max-w-[1200px] mx-auto">
+      <div class="mb-8 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-[0.65px] text-g400 mb-2">OneStop-exclusive items</p>
+          <h2 class="text-[clamp(1.8rem,3vw,2.8rem)] font-semibold leading-[1.10] tracking-[-0.8px]">OneStop Invoice</h2>
+          <p class="mt-2 text-[14px] text-g400">Items with no GrainMarket match — send directly to FreshBooks as an invoice.</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <template x-if="!invoiceResult && invoiceLines.length">
+            <button @click="sendOnestopToFreshbooks()"
+                    :disabled="invoiceInvoicing || !fbConnected"
+                    :title="!fbConnected ? 'Connect FreshBooks first' : 'Create a draft invoice in FreshBooks'"
+                    class="btn-primary text-[13px] disabled:opacity-40 disabled:cursor-not-allowed">
+              <template x-if="invoiceInvoicing">
+                <svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              </template>
+              <template x-if="!invoiceInvoicing">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+              </template>
+              <span x-text="invoiceInvoicing ? 'Creating…' : 'Create FreshBooks Invoice'"></span>
+            </button>
+          </template>
+          <template x-if="invoiceResult">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1.5 text-[13px] text-brand-dk dark:text-brand font-semibold">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+                Invoice #<span x-text="invoiceResult.invoice_number"></span> created
+              </span>
+              <template x-if="invoiceResult.freshbooks_url">
+                <a :href="invoiceResult.freshbooks_url" target="_blank" class="btn-primary text-[13px]">Open in FreshBooks ↗</a>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <template x-if="!invoiceLines.length">
+        <div class="flex flex-col items-center justify-center py-24 text-center">
+          <svg class="w-12 h-12 text-g300 dark:text-g600 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+            <rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/>
+          </svg>
+          <p class="text-[15px] font-medium text-g400">No OneStop-exclusive items yet</p>
+          <p class="text-[13px] text-g300 dark:text-g600 mt-1">Upload an order on the Orders tab — unmatched items will appear here.</p>
+        </div>
+      </template>
+
+      <!-- Items table -->
+      <template x-if="invoiceLines.length">
+        <div class="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-[#0d0d0d] overflow-hidden">
+          <table class="w-full text-[13px]">
+            <thead class="bg-g50 dark:bg-[#141414]">
+              <tr class="font-mono text-[11px] uppercase tracking-[0.5px] text-g400 border-b border-black/[0.05] dark:border-white/[0.05]">
+                <th class="text-left px-6 py-3 font-medium">#</th>
+                <th class="text-left px-4 py-3 font-medium">Description</th>
+                <th class="text-right px-4 py-3 font-medium w-16">Qty</th>
+                <th class="text-right px-4 py-3 font-medium w-28">Unit Price</th>
+                <th class="text-right px-6 py-3 font-medium w-28">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(l, i) in invoiceLines" :key="l.row_index">
+                <tr class="border-b border-black/[0.03] dark:border-white/[0.03] hover:bg-g50/60 dark:hover:bg-[#141414]/60">
+                  <td class="px-6 py-3 font-mono text-g300 dark:text-g600 text-[11px]" x-text="i + 1"></td>
+                  <td class="px-4 py-3" x-text="l.onestop_desc"></td>
+                  <td class="px-4 py-3 text-right font-mono" x-text="l.qty"></td>
+                  <td class="px-4 py-3 text-right font-mono text-g400"
+                      x-text="l.price != null ? '$' + Number(l.price).toFixed(2) : '—'"></td>
+                  <td class="px-6 py-3 text-right font-mono"
+                      x-text="l.price != null ? '$' + (l.qty * l.price).toFixed(2) : '—'"></td>
+                </tr>
+              </template>
+            </tbody>
+            <tfoot>
+              <tr class="border-t-2 border-black/[0.06] dark:border-white/[0.06] bg-g50 dark:bg-[#141414]">
+                <td class="px-6 py-3.5 font-semibold text-[13px]" colspan="4">Subtotal</td>
+                <td class="px-6 py-3.5 text-right font-mono font-semibold text-[14px]"
+                    x-text="'$' + invoiceLines.reduce((s, l) => s + (l.price != null ? l.qty * l.price : 0), 0).toFixed(2)"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </template>
+
+      <template x-if="!fbConnected && invoiceLines.length">
+        <p class="mt-4 text-[13px] text-g400">
+          ⚠ FreshBooks not connected — go to the <button @click="currentTab = 'freshbooks'" class="underline">FreshBooks tab</button> to connect first.
+        </p>
+      </template>
     </section>
   </template>
 

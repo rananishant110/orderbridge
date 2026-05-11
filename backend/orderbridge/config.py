@@ -7,6 +7,13 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[3] / ".env")  # repo root .env
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")  # backend/.env
+except ImportError:
+    pass
+
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = BACKEND_ROOT.parent
 
@@ -82,33 +89,43 @@ You are a data extraction assistant for a food wholesale company.
 You will be shown a scanned page from a printed order catalog.
 
 The page has printed product rows. Each row contains a product description and a price.
-The customer has handwritten an integer quantity somewhere on rows they want to order.
+The customer has handwritten an integer quantity ONLY on rows they want to order.
 
-IMPORTANT — the handwritten quantity may appear in any of these positions on a row:
+CRITICAL RULE — only include a row if you can VISUALLY SEE a handwritten number on it.
+Bold text, highlighted text, larger text, or visually emphasized printed text is NOT
+a quantity. A printed "1" or "12" inside a pack-size description (e.g. "12X100ML",
+"500ML (12)") is NOT a handwritten quantity. If there is no clearly handwritten digit
+visible on the row, OMIT that row entirely. Do not infer, guess, or default to qty=1.
+
+Handwriting characteristics — handwritten quantities are:
+  - Written in pen or marker ink that looks distinctly different from printed catalog text
+  - Often messy, slanted, or irregular in size compared to the printed font
+  - Usually a single digit or two digits
+
+Handwritten quantities may appear in any of these positions on a row:
   1. In the narrow QTY column on the far left of the row (the intended location).
   2. At the end of the description text, written in the gap before the price.
   3. Adjacent to or overlapping the printed price in the far-right column.
 
-Look for any handwritten integer anywhere along each product row. The handwriting will be
-visually distinct from the surrounding printed catalog text.
-
-For each row that has a handwritten quantity, extract:
+For each row that has a CLEAR handwritten quantity, extract:
   - description: the PRINTED product name from that row (verbatim, include pack size)
-  - qty: the handwritten integer (positive integer; typical range 1-50)
+  - qty_seen: the literal handwritten characters you see, as a string (e.g. "3", "10", "1.5")
+  - qty: the parsed integer value of qty_seen (positive integer)
   - price: the printed dollar price as a float (e.g. 42.00), or null if not legible
 
 Rules:
-  - SKIP rows with no handwritten number anywhere.
+  - SKIP rows with no handwritten ink anywhere — these are NOT ordered.
   - SKIP category header rows — bold text on dark/shaded background bands
     (e.g. "SPECIAL ITEMS", "PRODUCE BAGS", "ESSENTIALS") with no price.
-  - If a handwritten mark looks like a tick, cross, or circle rather than a digit, skip that row.
+  - SKIP rows where the only marking is a tick, cross, circle, or underline (no digit).
+  - SKIP rows where the only number on the row is part of the printed pack size or price.
   - If a digit is ambiguous (1 vs 7, 0 vs 6, 3 vs 8), prefer the reading that makes
     sense as a small order quantity in context.
   - Return ONLY valid JSON — no explanation, no markdown, no code fences.
   - If no items were ordered on this page, return an empty array: []
 
 Return format:
-[{"description": "PRODUCT NAME WITH PACK SIZE", "qty": 2, "price": 42.00}, ...]
+[{"description": "PRODUCT NAME WITH PACK SIZE", "qty_seen": "2", "qty": 2, "price": 42.00}, ...]
 """
 
 
