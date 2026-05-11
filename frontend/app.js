@@ -62,6 +62,18 @@ function orderBridge() {
     // history
     runHistory: [],
 
+    // ────────── PDF extraction review ──────────
+    pdfRunId: null,
+    pdfExtracting: false,
+    pdfExtractError: '',
+    pdfLines: [],           // [{id, description, qty, price, warning, source_page, _edited}]
+    pdfPageCount: 0,
+    pdfFirstPage: 1,
+    pdfWarnings: [],
+    pdfFocusedPage: 1,
+    pdfConfirming: false,
+    pdfFilename: '',
+
     // ────────── FreshBooks tab ──────────
     fbConnected: false,
     fbAccountId: '',
@@ -123,9 +135,12 @@ function orderBridge() {
           this.openCmdk();
           return;
         }
-        // ⌘⏎ — apply
-        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && this.runId) {
-          e.preventDefault(); this.applyRun(); return;
+        // ⌘⏎ — confirm PDF extraction (if in PDF review) or apply run
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+          e.preventDefault();
+          if (this.pdfRunId && !this.runId) { this.confirmPdf(); }
+          else if (this.runId) { this.applyRun(); }
+          return;
         }
         if (inField) return;
         // j/k navigation through filtered lines
@@ -164,8 +179,11 @@ function orderBridge() {
       if (f) this.startUpload(f);
     },
     async startUpload(file) {
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        return this.startPdfUpload(file);
+      }
       if (!file.name.endsWith('.xlsx')) {
-        this.toast('err', 'Only .xlsx files are accepted.');
+        this.toast('err', 'Only .xlsx and .pdf files are accepted.');
         return;
       }
       this.uploadStatus = `Uploading ${file.name} …`;
@@ -184,6 +202,93 @@ function orderBridge() {
         this.uploadStatus = 'Network error: ' + err.message;
       }
     },
+
+    // ────────── PDF extraction methods ──────────
+    async startPdfUpload(file) {
+      this.pdfExtracting = true;
+      this.pdfExtractError = '';
+      this.pdfFilename = file.name;
+      try {
+        const form = new FormData(); form.append('file', file);
+        const res = await fetch('/api/orders/upload-pdf', { method: 'POST', body: form });
+        if (!res.ok) {
+          this.pdfExtractError = `Extraction failed (${res.status}): ${await res.text()}`;
+          return;
+        }
+        const data = await res.json();
+        this.pdfRunId = data.run_id;
+        this.pdfPageCount = data.page_count;
+        this.pdfFirstPage = data.first_page_with_results || 1;
+        this.pdfFocusedPage = this.pdfFirstPage;
+        this.pdfWarnings = data.warnings || [];
+        this.pdfLines = data.extracted_lines.map((l, i) => ({
+          id: i,
+          description: l.description,
+          qty: l.qty,
+          price: l.price ?? '',
+          warning: l.warning || '',
+          source_page: l.source_page || 0,
+          _edited: false,
+        }));
+      } catch (err) {
+        this.pdfExtractError = 'Network error: ' + err.message;
+      } finally {
+        this.pdfExtracting = false;
+      }
+    },
+
+    pdfDeleteLine(id) {
+      this.pdfLines = this.pdfLines.filter(l => l.id !== id);
+    },
+
+    pdfAddLine() {
+      const maxId = this.pdfLines.reduce((m, l) => Math.max(m, l.id), -1);
+      this.pdfLines.push({ id: maxId + 1, description: '', qty: 1, price: '', warning: '', source_page: 0, _edited: true });
+      this.$nextTick(() => {
+        const inputs = document.querySelectorAll('[data-pdf-desc]');
+        inputs[inputs.length - 1]?.focus();
+      });
+    },
+
+    async confirmPdf() {
+      const valid = this.pdfLines.filter(l => l.qty > 0 && l.description.trim());
+      if (!valid.length) {
+        this.toast('err', 'Add at least one item with a description and quantity > 0.');
+        return;
+      }
+      this.pdfConfirming = true;
+      try {
+        const res = await fetch('/api/orders/confirm-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            run_id: this.pdfRunId,
+            lines: valid.map(l => ({
+              description: l.description.trim(),
+              qty: Math.max(1, Math.floor(Number(l.qty) || 1)),
+              price: l.price !== '' && l.price !== null ? parseFloat(l.price) : null,
+            })),
+          }),
+        });
+        if (!res.ok) { this.toast('err', `Confirm failed (${res.status}): ${await res.text()}`); return; }
+        const run = await res.json();
+        this.filename = this.pdfFilename;
+        this.runId = run.run_id;
+        this.lines = this.enrichLines(run);
+        // clear PDF state
+        this.pdfRunId = null; this.pdfLines = []; this.pdfWarnings = []; this.pdfFilename = '';
+        await this.loadGm();
+        this.toast('ok', `Matched ${run.auto.length} · review ${run.review.length} · unmatched ${run.unmatched.length}`);
+      } finally {
+        this.pdfConfirming = false;
+      }
+    },
+
+    pdfPageUrl(pageNum) {
+      return this.pdfRunId ? `/api/orders/pdf-page/${this.pdfRunId}/${pageNum}` : '';
+    },
+
+    // ────────── end PDF methods ──────────
 
     enrichLines(run) {
       const all = [
@@ -228,6 +333,14 @@ function orderBridge() {
       this.filter = 'all';
       this.query = '';
       this.gmQuery = '';
+      // PDF state
+      this.pdfRunId = null;
+      this.pdfLines = [];
+      this.pdfWarnings = [];
+      this.pdfExtractError = '';
+      this.pdfExtracting = false;
+      this.pdfConfirming = false;
+      this.pdfFilename = '';
     },
 
     // ────────── Selection linking ──────────

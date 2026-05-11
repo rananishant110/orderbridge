@@ -1,13 +1,14 @@
 """Order processing endpoints — upload → review → apply → download."""
 from __future__ import annotations
 
+import io
 import json
 import uuid
 from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from .. import config, db
 from ..auth import verify_session
@@ -17,10 +18,14 @@ from ..schemas import (
     GmCandidate,
     OrderLine,
     OrderUploadResponse,
+    PdfConfirmRequest,
+    PdfExtractedLine,
+    PdfUploadResponse,
 )
 from ..services.excel_reader import read_gm_catalog, read_onestop
 from ..services.excel_writer import OrderWrite, write_quantities
 from ..services.matching import GmIndex, match_all
+from ..services.pdf_order_reader import read_pdf_order, to_onestop_rows
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 
@@ -205,6 +210,120 @@ def apply(req: ApplyRequest, user: str = Depends(verify_session)):
         download_url=f"/api/orders/download/{out_name}",
         lines_written=written,
     )
+
+
+@router.post("/upload-pdf", response_model=PdfUploadResponse)
+async def upload_pdf(file: UploadFile = File(...), user: str = Depends(verify_session)):
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(400, "Only PDF files are accepted by this endpoint")
+
+    pdf_bytes = await file.read()
+    run_id = uuid.uuid4().hex[:12]
+
+    # Persist the PDF so the page-image endpoint can serve it later
+    pdf_path = config.RUNS_DIR / f"{run_id}__original.pdf"
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    pdf_path.write_bytes(pdf_bytes)
+
+    try:
+        result = read_pdf_order(pdf_bytes)
+    except ValueError as e:
+        pdf_path.unlink(missing_ok=True)
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        pdf_path.unlink(missing_ok=True)
+        raise HTTPException(502, f"PDF extraction failed: {e}")
+
+    _RUN_STAGING[run_id] = {
+        "source": "pdf",
+        "filename": file.filename,
+        "uploaded_at": datetime.utcnow().isoformat(),
+        "uploaded_by": user,
+        "pdf_path": str(pdf_path),
+        "page_images": result.page_images,   # held in memory for page serving
+        "lines": {},                          # populated by confirm-pdf
+    }
+
+    return PdfUploadResponse(
+        run_id=run_id,
+        page_count=result.page_count,
+        first_page_with_results=result.first_page_with_results,
+        extracted_lines=[
+            PdfExtractedLine(
+                description=l.description,
+                qty=l.qty,
+                price=l.price,
+                warning=l.warning,
+                source_page=l.source_page,
+            )
+            for l in result.lines
+        ],
+        warnings=result.warnings,
+    )
+
+
+@router.get("/pdf-page/{run_id}/{page_num}")
+def pdf_page_image(run_id: str, page_num: int, user: str = Depends(verify_session)):
+    stage = _RUN_STAGING.get(run_id)
+    if stage is None or stage.get("source") != "pdf":
+        raise HTTPException(404, "Unknown PDF run — upload again")
+
+    page_images = stage.get("page_images", [])
+    if page_num < 1 or page_num > len(page_images):
+        raise HTTPException(404, f"Page {page_num} out of range 1–{len(page_images)}")
+
+    page_img = page_images[page_num - 1]
+    buf = io.BytesIO()
+    page_img.image.save(buf, format="PNG")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png")
+
+
+@router.post("/confirm-pdf", response_model=OrderUploadResponse)
+def confirm_pdf(req: PdfConfirmRequest, user: str = Depends(verify_session)):
+    stage = _RUN_STAGING.get(req.run_id)
+    if stage is None or stage.get("source") != "pdf":
+        raise HTTPException(404, "Unknown PDF run — upload again")
+
+    rows = to_onestop_rows(req.lines)
+    if not rows:
+        raise HTTPException(400, "No valid lines provided (need description + qty > 0)")
+
+    index = _gm_index()
+    learned = _load_learned()
+    results = match_all(rows, index, learned)
+
+    def _line(r) -> OrderLine:
+        picked = None
+        if r.picked is not None:
+            picked = GmCandidate(
+                item_no=r.picked.item_no, sheet=r.picked.sheet,
+                description=r.picked.description, price=r.picked.price,
+                score=r.score,
+            )
+        cands = [
+            GmCandidate(item_no=c.item_no, sheet=c.sheet,
+                        description=c.description, price=c.price, score=s)
+            for c, s in r.candidates
+        ]
+        return OrderLine(
+            row_index=r.onestop.row_index,
+            onestop_desc=r.onestop.description,
+            qty=r.onestop.qty,
+            bucket=r.bucket,
+            picked=picked,
+            candidates=cands,
+            reason=r.reason,
+        )
+
+    auto      = [_line(r) for r in results if r.bucket == "auto"]
+    review    = [_line(r) for r in results if r.bucket == "review"]
+    unmatched = [_line(r) for r in results if r.bucket == "unmatched"]
+
+    # Populate staging so the existing /apply endpoint works unchanged
+    stage["lines"] = {r.onestop.row_index: r for r in results}
+
+    return OrderUploadResponse(run_id=req.run_id, auto=auto, review=review, unmatched=unmatched)
 
 
 @router.get("/download/{filename}")

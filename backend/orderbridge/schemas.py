@@ -133,3 +133,32 @@ class FbInvoiceDetail(BaseModel):
 class FbAppendRequest(BaseModel):
     items: list[FbLineItem]
     order_number: str = ""
+
+
+# ─── PDF order intake schemas ──────────────────────────────────────────────────
+
+class PdfExtractedLine(BaseModel):
+    description: str
+    qty: int
+    price: Optional[float] = None
+    warning: Optional[str] = None
+    source_page: int = 0
+
+
+class PdfUploadResponse(BaseModel):
+    run_id: str
+    page_count: int
+    first_page_with_results: int
+    extracted_lines: list[PdfExtractedLine]
+    warnings: list[str] = []
+
+
+class PdfConfirmLine(BaseModel):
+    description: str
+    qty: int
+    price: Optional[float] = None
+
+
+class PdfConfirmRequest(BaseModel):
+    run_id: str
+    lines: list[PdfConfirmLine]

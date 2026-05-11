@@ -58,6 +58,60 @@ FRESHBOOKS_DISCLAIMER = (
 )
 
 
+# ─── PDF Order Intake ────────────────────────────────────────────────────────
+# Provider: "gemini" (default, uses GOOGLE_API_KEY) or "anthropic" (uses ANTHROPIC_API_KEY)
+PDF_VISION_PROVIDER = os.environ.get("PDF_VISION_PROVIDER", "gemini")
+
+# API key — checked in priority order: explicit override, then provider-specific var
+PDF_VISION_API_KEY = (
+    os.environ.get("PDF_VISION_API_KEY")
+    or os.environ.get("GOOGLE_API_KEY")
+    or os.environ.get("ANTHROPIC_API_KEY")
+    or ""
+)
+
+# Model defaults per provider:
+#   gemini   → gemini-2.5-flash   (fast, cheap, strong vision)
+#   anthropic → claude-haiku-4-5-20251001
+PDF_VISION_MODEL    = os.environ.get("PDF_VISION_MODEL", "gemini-2.5-flash")
+PDF_PAGE_RESOLUTION = int(os.environ.get("PDF_PAGE_RESOLUTION", "150"))  # DPI
+PDF_MAX_PAGES       = int(os.environ.get("PDF_MAX_PAGES", "60"))
+
+PDF_EXTRACTION_PROMPT = """\
+You are a data extraction assistant for a food wholesale company.
+You will be shown a scanned page from a printed order catalog.
+
+The page has printed product rows. Each row contains a product description and a price.
+The customer has handwritten an integer quantity somewhere on rows they want to order.
+
+IMPORTANT — the handwritten quantity may appear in any of these positions on a row:
+  1. In the narrow QTY column on the far left of the row (the intended location).
+  2. At the end of the description text, written in the gap before the price.
+  3. Adjacent to or overlapping the printed price in the far-right column.
+
+Look for any handwritten integer anywhere along each product row. The handwriting will be
+visually distinct from the surrounding printed catalog text.
+
+For each row that has a handwritten quantity, extract:
+  - description: the PRINTED product name from that row (verbatim, include pack size)
+  - qty: the handwritten integer (positive integer; typical range 1-50)
+  - price: the printed dollar price as a float (e.g. 42.00), or null if not legible
+
+Rules:
+  - SKIP rows with no handwritten number anywhere.
+  - SKIP category header rows — bold text on dark/shaded background bands
+    (e.g. "SPECIAL ITEMS", "PRODUCE BAGS", "ESSENTIALS") with no price.
+  - If a handwritten mark looks like a tick, cross, or circle rather than a digit, skip that row.
+  - If a digit is ambiguous (1 vs 7, 0 vs 6, 3 vs 8), prefer the reading that makes
+    sense as a small order quantity in context.
+  - Return ONLY valid JSON — no explanation, no markdown, no code fences.
+  - If no items were ordered on this page, return an empty array: []
+
+Return format:
+[{"description": "PRODUCT NAME WITH PACK SIZE", "qty": 2, "price": 42.00}, ...]
+"""
+
+
 def ensure_dirs() -> None:
     for d in (STORAGE_DIR, TEMPLATES_DIR, RUNS_DIR):
         d.mkdir(parents=True, exist_ok=True)
