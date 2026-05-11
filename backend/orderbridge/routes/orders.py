@@ -80,6 +80,7 @@ async def upload(file: UploadFile = File(...), user: str = Depends(verify_sessio
             row_index=r.onestop.row_index,
             onestop_desc=r.onestop.description,
             qty=r.onestop.qty,
+            price=r.onestop.price,
             bucket=r.bucket,
             picked=picked,
             candidates=cands,

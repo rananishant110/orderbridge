@@ -18,6 +18,7 @@ class OrderLine(BaseModel):
     row_index: int
     onestop_desc: str
     qty: int
+    price: Optional[float] = None
     bucket: Literal["auto", "review", "unmatched"]
     picked: Optional[GmCandidate] = None
     candidates: list[GmCandidate] = []

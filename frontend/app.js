@@ -19,7 +19,7 @@
 function orderBridge() {
   return {
     // ────────── UI state ──────────
-    currentTab: 'orders',   // 'orders' | 'freshbooks'
+    currentTab: 'orders',   // 'orders' | 'invoice' | 'freshbooks'
     theme: 'dark',
     cmdkOpen: false,
     refreshModalOpen: false,
@@ -30,6 +30,8 @@ function orderBridge() {
     refreshing: false,
     refreshStatus: '',
     applyResult: null,
+    invoiceInvoicing: false,
+    invoiceResult: null,
     toasts: [],
     _toastSeq: 0,
 
@@ -328,6 +330,8 @@ function orderBridge() {
       this.filename = null;
       this.lines = [];
       this.applyResult = null;
+      this.invoiceInvoicing = false;
+      this.invoiceResult = null;
       this.selectedRowIndex = null;
       this.selectedGmKey = null;
       this.filter = 'all';
@@ -462,6 +466,13 @@ function orderBridge() {
       this.cmdResults = [];
     },
 
+    // ────────── Computed: OneStop-exclusive lines → FreshBooks invoice ──────────
+    get invoiceLines() {
+      return this.lines
+        .filter(l => l.choice === 'onestop_only')
+        .map(l => ({ row_index: l.row_index, onestop_desc: l.onestop_desc, qty: l.qty, price: l.price }));
+    },
+
     // ────────── Apply the run ──────────
     async applyRun() {
       if (!this.runId || this.applying) return;
@@ -504,6 +515,39 @@ function orderBridge() {
         this.toast('err', 'Network error: ' + err.message);
       } finally {
         this.applying = false;
+      }
+    },
+
+    // ────────── OneStop → FreshBooks invoice ──────────
+    async sendOnestopToFreshbooks() {
+      if (!this.invoiceLines.length || this.invoiceInvoicing) return;
+      this.invoiceInvoicing = true;
+      try {
+        const items = this.invoiceLines.map(l => ({
+          item_code: '',
+          description: l.onestop_desc,
+          unit: 'EA',
+          qty: l.qty,
+          unit_price: l.price ?? 0,
+          amount: +(l.qty * (l.price ?? 0)).toFixed(2),
+        }));
+        const orderNumber = (this.filename || 'order').replace(/\.[^.]+$/, '');
+        const orderDate = new Date().toISOString().slice(0, 10);
+        const res = await fetch('/api/freshbooks/invoice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_number: orderNumber, order_date: orderDate, items }),
+        });
+        if (!res.ok) {
+          this.toast('err', `FreshBooks error: ${res.status}`);
+        } else {
+          this.invoiceResult = await res.json();
+          this.toast('ok', `Invoice #${this.invoiceResult.invoice_number} created in FreshBooks!`);
+        }
+      } catch (err) {
+        this.toast('err', 'Network error: ' + err.message);
+      } finally {
+        this.invoiceInvoicing = false;
       }
     },
 
